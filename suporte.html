@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Suporte | MuciGems</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0b0f19; --card-bg: rgba(15, 20, 35, 0.88); --navy: #1e3a8a; 
+            --purple: #7c3aed; --red: #dc2626; --text-main: #f8fafc; --text-muted: #94a3b8; 
+            --border: rgba(255, 255, 255, 0.08); --success: #10b981; --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: radial-gradient(1200px 600px at 10% 10%, rgba(30, 58, 138, 0.15), transparent), radial-gradient(1000px 500px at 90% 90%, rgba(124, 58, 237, 0.12), transparent), var(--bg-dark); color: var(--text-main); min-height: 100vh; padding-bottom: 40px; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(10px); }
+        .menu-btn { background: none; border: none; color: var(--text-main); font-size: 1.3rem; cursor: pointer; }
+        .logo { font-weight: 800; font-size: 1.3rem; background: linear-gradient(135deg, var(--navy), var(--purple)); -webkit-background-clip: text; color: transparent; }
+        
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .drawer-overlay.open { opacity: 1; visibility: visible; }
+        .drawer { position: fixed; top: 0; left: 0; width: 280px; height: 100vh; background: var(--card-bg); border-right: 1px solid var(--border); z-index: 100; transform: translateX(-100%); transition: 0.3s ease; display: flex; flex-direction: column; }
+        .drawer.open { transform: translateX(0); }
+        .drawer-header { padding: 24px; border-bottom: 1px solid var(--border); text-align: center; }
+        .drawer-header i { font-size: 2rem; color: var(--purple); margin-bottom: 8px; }
+        .drawer-header h2 { font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
+        .drawer-links { flex: 1; padding: 16px; overflow-y: auto; }
+        .drawer-link { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: var(--text-muted); text-decoration: none; font-weight: 500; border-radius: 10px; margin-bottom: 4px; transition: 0.2s; }
+        .drawer-link:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
+        .drawer-link i { width: 20px; text-align: center; }
+        .drawer-footer { padding: 20px; border-top: 1px solid var(--border); }
+        .logout-btn { display: flex; align-items: center; gap: 10px; color: var(--red); text-decoration: none; font-weight: 600; }
+
+        .container { max-width: 700px; margin: 0 auto; padding: 24px 20px; }
+        .page-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+        .page-title i { color: var(--purple); }
+        
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 24px; backdrop-filter: blur(12px); margin-bottom: 20px; }
+        .card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .card h3 i { color: var(--purple); }
+        
+        .faq-item { border-bottom: 1px solid var(--border); padding: 16px 0; cursor: pointer; }
+        .faq-item:last-child { border-bottom: none; }
+        .faq-q { font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+        .faq-q span { display: flex; align-items: center; gap: 10px; }
+        .faq-q i { color: var(--purple); font-size: 0.9rem; }
+        .faq-q .chevron { transition: transform 0.3s; color: var(--text-muted); }
+        .faq-item.open .chevron { transform: rotate(180deg); }
+        .faq-a { color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }        .faq-item.open .faq-a { max-height: 200px; padding-top: 8px; }
+
+        /* Modal de Seleção de Assunto */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: none; align-items: flex-end; justify-content: center; padding: 0; backdrop-filter: blur(4px); }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--card-bg); border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 24px; width: 100%; max-width: 500px; animation: slideUp 0.3s ease; max-height: 80vh; overflow-y: auto; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal h3 { font-size: 1.2rem; margin-bottom: 20px; text-align: center; color: var(--text-main); }
+        
+        .subject-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .subject-option { background: rgba(255,255,255,0.05); border: 2px solid var(--border); border-radius: 12px; padding: 16px 12px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .subject-option:hover { background: rgba(124, 58, 237, 0.1); border-color: var(--purple); }
+        .subject-option.selected { background: rgba(124, 58, 237, 0.15); border-color: var(--purple); }
+        .subject-option i { font-size: 1.8rem; margin-bottom: 8px; display: block; }
+        .subject-option .label { font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+        .subject-option .desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+        /* Cores dos ícones por assunto */
+        .subject-option[data-value="compra"] i { color: var(--success); }
+        .subject-option[data-value="reembolso"] i { color: var(--warning); }
+        .subject-option[data-value="site"] i { color: var(--red); }
+        .subject-option[data-value="entrega"] i { color: #06b6d4; }
+        .subject-option[data-value="outras"] i { color: var(--text-muted); }
+
+        .btn-confirm-subject { width: 100%; padding: 14px; background: var(--purple); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-confirm-subject:hover { background: #6d28d9; }
+        .btn-confirm-subject:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Formulário */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+        .form-group .selected-subject { display: flex; align-items: center; gap: 8px; padding: 12px; background: rgba(124, 58, 237, 0.1); border: 1px solid var(--purple); border-radius: 8px; color: var(--text-main); font-weight: 600; cursor: pointer; }
+        .form-group .selected-subject i { color: var(--purple); }
+        .form-group .selected-subject:hover { background: rgba(124, 58, 237, 0.2); }
+        .form-group input, .form-group textarea { width: 100%; padding: 12px; background: rgba(30, 35, 55, 0.7); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 0.95rem; outline: none; font-family: inherit; transition: 0.2s; }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15); }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+        .form-group .error { color: var(--red); font-size: 0.75rem; display: none; margin-top: 4px; }
+        .form-group.invalid input, .form-group.invalid textarea { border-color: var(--red); }
+        .form-group.invalid .error { display: block; }
+
+        .btn-send { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--red), #b91c1c); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        .btn-send:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35); }
+        .btn-send:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* Toast */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { background: var(--card-bg); border: 1px solid var(--border); color: white; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateX(120%); opacity: 0; transition: 0.4s; pointer-events: auto; max-width: 300px; }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast.success { border-left: 4px solid var(--success); }        .toast.error { border-left: 4px solid var(--red); }
+        .toast i { font-size: 1rem; flex-shrink: 0; }
+        .toast.success i { color: var(--success); }
+        .toast.error i { color: var(--red); }
+        .toast p { font-size: 0.85rem; margin: 0; line-height: 1.3; }
+
+        @media (max-width: 480px) {
+            .subject-grid { grid-template-columns: 1fr; }
+            .container { padding: 20px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
+        <div class="logo">MuciGems</div>
+        <div style="width: 24px;"></div>
+    </div>
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+    <aside class="drawer" id="drawer">
+        <div class="drawer-header"><i class="fas fa-gem"></i><h2>MuciGems</h2></div>
+        <nav class="drawer-links">
+            <a href="home.html" class="drawer-link"><i class="fas fa-store"></i> Loja</a>
+            <a href="perfil.html" class="drawer-link"><i class="fas fa-user"></i> Perfil</a>
+            <a href="atualizacoes.html" class="drawer-link"><i class="fas fa-rotate"></i> Atualizações</a>
+            <a href="suporte.html" class="drawer-link" style="color:var(--purple);background:rgba(124,58,237,0.1);"><i class="fas fa-headset"></i> Suporte</a>
+            <a href="sobre.html" class="drawer-link"><i class="fas fa-info-circle"></i> Sobre Nós</a>
+            <a href="politica.html" class="drawer-link"><i class="fas fa-shield-halved"></i> Privacidade</a>
+            <a href="termos.html" class="drawer-link"><i class="fas fa-file-contract"></i> Termos</a>
+        </nav>
+        <div class="drawer-footer"><a href="login.html" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Sair</a></div>
+    </aside>
+
+    <main class="container">
+        <h1 class="page-title"><i class="fas fa-headset"></i> Central de Suporte</h1>
+        
+        <!-- FAQ Accordion -->
+        <div class="card">
+            <h3><i class="fas fa-circle-question"></i> Perguntas Frequentes</h3>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q">
+                    <span><i class="fas fa-clock"></i> Quanto tempo demora a entrega?</span>
+                    <i class="fas fa-chevron-down chevron"></i>
+                </div>
+                <div class="faq-a">Após a confirmação do pagamento, os diamantes são creditados em até 5 a 15 minutos. Em picos de demanda, pode levar até 2 horas.</div>
+            </div>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q">
+                    <span><i class="fas fa-undo"></i> Posso solicitar reembolso?</span>
+                    <i class="fas fa-chevron-down chevron"></i>                </div>
+                <div class="faq-a">Reembolsos são analisados caso a entrega não seja realizada. Após o crédito dos diamantes, não há devolução. Entre em contato pelo formulário abaixo.</div>
+            </div>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q">
+                    <span><i class="fas fa-fingerprint"></i> Onde encontro meu UID?</span>
+                    <i class="fas fa-chevron-down chevron"></i>
+                </div>
+                <div class="faq-a">No Free Fire, clique no seu avatar no canto superior esquerdo. O número abaixo do nome é o seu UID.</div>
+            </div>
+            <div class="faq-item" onclick="toggleFaq(this)">
+                <div class="faq-q">
+                    <span><i class="fas fa-credit-card"></i> Quais formas de pagamento?</span>
+                    <i class="fas fa-chevron-down chevron"></i>
+                </div>
+                <div class="faq-a">Atualmente aceitamos PIX .Novas formas de pagamento serão adicionadas em breve.</div>
+            </div>
+        </div>
+
+        <!-- Formulário de Suporte -->
+        <div class="card">
+            <h3><i class="fas fa-paper-plane"></i> Enviar Mensagem</h3>
+            <form id="supportForm">
+                <div class="form-group" id="nameGroup">
+                    <label>Seu Nome</label>
+                    <input type="text" id="supportName" placeholder="Digite seu nome">
+                    <span class="error">Nome é obrigatório</span>
+                </div>
+                <div class="form-group" id="emailGroup">
+                    <label>E-mail para contato</label>
+                    <input type="email" id="supportEmail" placeholder="seu@email.com">
+                    <span class="error">E-mail inválido</span>
+                </div>
+                <div class="form-group" id="subjectGroup">
+                    <label>Assunto</label>
+                    <div class="selected-subject" id="selectedSubject" onclick="openSubjectModal()">
+                        <i class="fas fa-hand-pointer"></i>
+                        <span id="subjectText">Toque para selecionar o assunto</span>
+                    </div>
+                    <span class="error">Selecione um assunto</span>
+                </div>
+                <div class="form-group" id="messageGroup">
+                    <label>Mensagem</label>
+                    <textarea id="supportMessage" rows="4" placeholder="Descreva sua dúvida ou problema com detalhes..."></textarea>
+                    <span class="error">Mensagem é obrigatória</span>
+                </div>
+                <button type="submit" class="btn-send" id="sendBtn"><i class="fas fa-paper-plane"></i> Enviar Mensagem</button>
+            </form>
+        </div>
+    </main>    <!-- Modal de Seleção de Assunto -->
+    <div class="modal-overlay" id="subjectModal">
+        <div class="modal">
+            <h3>Selecione o Assunto</h3>
+            <div class="subject-grid">
+                <div class="subject-option" data-value="compra" onclick="selectSubject(this)">
+                    <i class="fas fa-shopping-cart"></i>
+                    <div class="label">Problema na Compra</div>
+                    <div class="desc">Pagamento não processado</div>
+                </div>
+                <div class="subject-option" data-value="reembolso" onclick="selectSubject(this)">
+                    <i class="fas fa-undo-alt"></i>
+                    <div class="label">Pedido de Reembolso</div>
+                    <div class="desc">Solicitar devolução</div>
+                </div>
+                <div class="subject-option" data-value="site" onclick="selectSubject(this)">
+                    <i class="fas fa-bug"></i>
+                    <div class="label">Problemas no Site</div>
+                    <div class="desc">Erros ou bugs</div>
+                </div>
+                <div class="subject-option" data-value="entrega" onclick="selectSubject(this)">
+                    <i class="fas fa-truck"></i>
+                    <div class="label">Dúvida sobre Entrega</div>
+                    <div class="desc">Status ou atraso</div>
+                </div>
+                <div class="subject-option" data-value="outras" onclick="selectSubject(this)" style="grid-column: span 2;">
+                    <i class="fas fa-comment-dots"></i>
+                    <div class="label">Outros Assuntos</div>
+                    <div class="desc">Sugestões ou dúvidas gerais</div>
+                </div>
+            </div>
+            <button class="btn-confirm-subject" id="confirmSubjectBtn" disabled onclick="confirmSubject()">Confirmar Seleção</button>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, push, set, onDisconnect } from "./firebase-firestore-compat.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"; // Added Auth
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
+            authDomain: "renda-cash-f3c91-default-rtdb.firebaseio.com",
+            databaseURL: "https://renda-cash-f3c91-default-rtdb.firebaseio.com",
+            projectId: "renda-cash-f3c91",            storageBucket: "renda-cash-f3c91.firebasestorage.app",
+            messagingSenderId: "600925903090",
+            appId: "1:346807213810:android:b05ec1bcab93f9bf747a6b",
+            measurementId: "G-BT9FB5CTNM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app); // Initialize Auth
+
+        // --- UI Elements ---
+        const subjectModal = document.getElementById('subjectModal');
+        const selectedSubjectDiv = document.getElementById('selectedSubject');
+        const subjectText = document.getElementById('subjectText');
+        const confirmSubjectBtn = document.getElementById('confirmSubjectBtn');
+        let selectedSubjectValue = null;
+        let selectedSubjectLabel = null;
+        let currentUser = null; // Store current user
+
+        // --- Drawer ---
+        const menuBtn = document.getElementById('menuBtn');
+        const drawer = document.getElementById('drawer');
+        const drawerOverlay = document.getElementById('drawerOverlay');
+        function toggleDrawer() { drawer.classList.toggle('open'); drawerOverlay.classList.toggle('open'); }
+        menuBtn.addEventListener('click', toggleDrawer);
+        drawerOverlay.addEventListener('click', toggleDrawer);
+
+        // --- Presence & Activity Tracking ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                // Set online status
+                set(ref(db, `Usuarios/${user.uid}/online`), true);
+                onDisconnect(ref(db, `Usuarios/${user.uid}/online`)).set(false);
+                onDisconnect(ref(db, `Usuarios/${user.uid}/lastSeen`)).set(Date.now());
+                
+                // Log page visit
+                push(ref(db, 'Atividades'), {
+                    uid: user.uid,
+                    usuarioNome: user.displayName || user.email || 'Usuário',
+                    acao: 'acessou a central de suporte',
+                    tipo: 'nav',
+                    pagina: window.location.pathname,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        });
+
+        // --- FAQ Accordion ---
+        window.toggleFaq = (item) => {
+            const isOpen = item.classList.contains('open');
+            document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+            if (!isOpen) item.classList.add('open');        };
+
+        // --- Subject Modal ---
+        window.openSubjectModal = () => {
+            subjectModal.classList.add('active');
+        };
+
+        window.closeSubjectModal = () => {
+            subjectModal.classList.remove('active');
+        };
+
+        window.selectSubject = (option) => {
+            document.querySelectorAll('.subject-option').forEach(o => o.classList.remove('selected'));
+            option.classList.add('selected');
+            selectedSubjectValue = option.dataset.value;
+            selectedSubjectLabel = option.querySelector('.label').textContent;
+            confirmSubjectBtn.disabled = false;
+        };
+
+        window.confirmSubject = () => {
+            if (!selectedSubjectValue) return;
+            subjectText.textContent = selectedSubjectLabel;
+            subjectText.style.color = 'var(--text-main)';
+            closeSubjectModal();
+        };
+
+        // Fechar modal ao clicar fora
+        subjectModal.addEventListener('click', (e) => {
+            if (e.target === subjectModal) closeSubjectModal();
+        });
+
+        // --- Toast ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle' };
+            toast.innerHTML = `<i class="fas ${icons[type]}"></i><p>${message}</p>`;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3500);
+        }
+
+        // --- Validação e Envio ---
+        function validateForm() {
+            let valid = true;
+            const name = document.getElementById('supportName');
+            const email = document.getElementById('supportEmail');
+            const message = document.getElementById('supportMessage');
+                        // Reset
+            ['nameGroup', 'emailGroup', 'subjectGroup', 'messageGroup'].forEach(id => {
+                document.getElementById(id).classList.remove('invalid');
+            });
+
+            if (!name.value.trim()) {
+                document.getElementById('nameGroup').classList.add('invalid');
+                valid = false;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email.value.trim())) {
+                document.getElementById('emailGroup').classList.add('invalid');
+                valid = false;
+            }
+
+            if (!selectedSubjectValue) {
+                document.getElementById('subjectGroup').classList.add('invalid');
+                valid = false;
+            }
+
+            if (!message.value.trim()) {
+                document.getElementById('messageGroup').classList.add('invalid');
+                valid = false;
+            }
+
+            return valid;
+        }
+
+        document.getElementById('supportForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!validateForm()) {
+                showToast('Preencha todos os campos obrigatórios.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+            try {
+                await push(ref(db, 'Suporte'), {
+                    nome: document.getElementById('supportName').value.trim(),
+                    email: document.getElementById('supportEmail').value.trim(),
+                    assunto: selectedSubjectLabel,
+                    assuntoKey: selectedSubjectValue,
+                    mensagem: document.getElementById('supportMessage').value.trim(),
+                    timestamp: new Date().toISOString(),
+                    lido: false
+                });
+                // --- LOG ACTIVITY ---
+                if (currentUser) {
+                    push(ref(db, 'Atividades'), {
+                        uid: currentUser.uid,
+                        usuarioNome: currentUser.displayName || currentUser.email || 'Usuário',
+                        acao: 'enviou mensagem de suporte',
+                        tipo: 'suporte',
+                        detalhes: `Assunto: ${selectedSubjectLabel}`,
+                        pagina: window.location.pathname,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+
+                showToast('Mensagem enviada com sucesso! Responderemos em até 24h.', 'success');
+                document.getElementById('supportForm').reset();
+                selectedSubjectValue = null;
+                selectedSubjectLabel = null;
+                subjectText.textContent = 'Toque para selecionar o assunto';
+                subjectText.style.color = 'var(--text-main)';
+                confirmSubjectBtn.disabled = true;
+                document.querySelectorAll('.subject-option').forEach(o => o.classList.remove('selected'));
+            } catch (err) {
+                console.error(err);
+                showToast('Erro ao enviar mensagem. Tente novamente.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Mensagem';
+            }
+        });
+    </script>
+</body>
+</html>

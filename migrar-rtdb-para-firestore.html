@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Migrar RTDB para Firestore</title>
+      <style>
+        body { font-family: Arial, sans-serif; background:#0f172a; color:#e5e7eb; margin:0; padding:24px; }
+        .wrap { max-width: 860px; margin: 0 auto; }
+        .card { background:#111827; border:1px solid #1f2937; border-radius:16px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+        h1 { margin-top:0; font-size:28px; }
+        p, li { line-height:1.6; }
+        button { background:#22c55e; color:#052e16; border:0; border-radius:12px; padding:14px 18px; font-weight:700; cursor:pointer; }
+        button:disabled { opacity:.6; cursor:not-allowed; }
+        pre { background:#020617; color:#cbd5e1; border:1px solid #1e293b; border-radius:12px; padding:16px; min-height:240px; white-space:pre-wrap; }
+        .warn { color:#fbbf24; font-weight:700; }
+      </style>
+    </head>
+    <body>
+      <div class="wrap">
+        <div class="card">
+          <h1>Migrar Realtime Database para Firestore</h1>
+          <p>Essa página lê os dados atuais do Realtime Database e grava no Firestore seguindo o novo mapeamento do projeto.</p>
+          <p class="warn">Use uma única vez e só depois publique os arquivos já convertidos para Firestore.</p>
+          <ul>
+            <li>Coleções migradas: Usuarios, Pedidos, Atividades, Suporte, Atualizacoes, Produtos, Vendedores e admins.</li>
+            <li>Documentos únicos: Manutencao e Versao.</li>
+            <li>Notificações: RTDB <code>Notificacoes/{uid}/{notifId}</code> → Firestore <code>Notificacoes/{uid}/items/{notifId}</code>.</li>
+          </ul>
+          <button id="startBtn">Iniciar migração</button>
+          <pre id="log"></pre>
+        </div>
+      </div>
+
+      <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+        import { getFirestore, doc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "<SECRET>",
+          authDomain: "renda-cash-f3c91-default-rtdb.firebaseio.com",
+          databaseURL: "https://renda-cash-f3c91-default-rtdb.firebaseio.com",
+          projectId: "renda-cash-f3c91",
+          storageBucket: "renda-cash-f3c91.firebasestorage.app",
+          messagingSenderId: "299831255809",
+          appId: "1:299831255809:web:9803745b3f81387d2d995e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const rtdb = getDatabase(app);
+        const firestore = getFirestore(app);
+        const logEl = document.getElementById('log');
+        const startBtn = document.getElementById('startBtn');
+
+        function log(message) {
+          logEl.textContent += message + "\n";
+          logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        async function migrateCollection(name) {
+          const snap = await get(ref(rtdb, name));
+          if (!snap.exists()) {
+            log(`- ${name}: vazio, nada para migrar.`);
+            return;
+          }
+
+          const items = [];
+          snap.forEach(child => {
+            items.push({ id: child.key, data: child.val() });
+          });
+
+          let batch = writeBatch(firestore);
+          let count = 0;
+          let batchCount = 0;
+
+          for (const item of items) {
+            batch.set(doc(firestore, name, item.id), item.data);
+            count++;
+            batchCount++;
+            if (batchCount >= 400) {
+              await batch.commit();
+              batch = writeBatch(firestore);
+              batchCount = 0;
+            }
+          }
+
+          if (batchCount > 0) {
+            await batch.commit();
+          }
+
+          log(`- ${name}: ${count} registro(s) migrado(s).`);
+        }
+
+        async function migrateSingleton(name) {
+          const snap = await get(ref(rtdb, name));
+          if (!snap.exists()) {
+            log(`- ${name}: vazio, nada para migrar.`);
+            return;
+          }
+          const batch = writeBatch(firestore);
+          batch.set(doc(firestore, '__config__', name), snap.val());
+          await batch.commit();
+          log(`- ${name}: documento único migrado.`);
+        }
+
+        async function migrateNotifications() {
+          const snap = await get(ref(rtdb, 'Notificacoes'));
+          if (!snap.exists()) {
+            log('- Notificacoes: vazio, nada para migrar.');
+            return;
+          }
+
+          const entries = [];
+          let totalUsers = 0;
+          snap.forEach(userChild => {
+            totalUsers++;
+            const uid = userChild.key;
+            userChild.forEach(notifChild => {
+              entries.push({ uid, id: notifChild.key, data: notifChild.val() });
+            });
+          });
+
+          let batch = writeBatch(firestore);
+          let batchCount = 0;
+          for (const entry of entries) {
+            batch.set(doc(firestore, 'Notificacoes', entry.uid, 'items', entry.id), entry.data);
+            batchCount++;
+            if (batchCount >= 400) {
+              await batch.commit();
+              batch = writeBatch(firestore);
+              batchCount = 0;
+            }
+          }
+          if (batchCount > 0) {
+            await batch.commit();
+          }
+
+          log(`- Notificacoes: ${totalUsers} usuário(s) e ${entries.length} notificação(ões) migradas.`);
+        }
+
+        startBtn.addEventListener('click', async () => {
+          startBtn.disabled = true;
+          logEl.textContent = '';
+          try {
+            log('Iniciando migração...');
+            for (const name of ['Usuarios', 'Pedidos', 'Atividades', 'Suporte', 'Atualizacoes', 'Produtos', 'Vendedores', 'admins']) {
+              await migrateCollection(name);
+            }
+            await migrateSingleton('Manutencao');
+            await migrateSingleton('Versao');
+            await migrateNotifications();
+            log('Migração concluída com sucesso.');
+          } catch (error) {
+            console.error(error);
+            log('Erro na migração: ' + (error?.message || error));
+          } finally {
+            startBtn.disabled = false;
+          }
+        });
+      </script>
+    </body>
+    </html>

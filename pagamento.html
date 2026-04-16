@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Pagamento | MuciGems</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0b0f19; --card-bg: rgba(15, 20, 35, 0.88); --navy: #1e3a8a; 
+            --purple: #7c3aed; --red: #dc2626; --text-main: #f8fafc; --text-muted: #94a3b8; 
+            --border: rgba(255, 255, 255, 0.08); --success: #10b981; --warning: #f59e0b;
+            --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: radial-gradient(1200px 600px at 10% 10%, rgba(30, 58, 138, 0.15), transparent), radial-gradient(1000px 500px at 90% 90%, rgba(124, 58, 237, 0.12), transparent), var(--bg-dark); color: var(--text-main); min-height: 100vh; padding: 16px; padding-bottom: calc(16px + var(--safe-bottom)); overflow-x: hidden; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; margin-bottom: 20px; }
+        .back-btn { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; }
+        .page-title { font-size: 1.4rem; font-weight: 700; flex: 1; text-align: center; }
+        .spacer { width: 40px; }
+
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; backdrop-filter: blur(12px); margin-bottom: 16px; }
+        
+        .step-indicator { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+        .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: 0.3s; }
+        .step-dot.active { background: var(--purple); width: 24px; border-radius: 4px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+        .form-group input { width: 100%; padding: 14px; background: rgba(30, 35, 55, 0.7); border: 1px solid var(--border); border-radius: 10px; color: white; font-size: 1rem; outline: none; transition: 0.2s; }
+        .form-group input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15); }
+        .form-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+
+        .pix-details { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+        .pix-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 10px; }
+        .pix-label { font-size: 0.85rem; color: var(--text-muted); }
+        .pix-value { font-weight: 600; color: var(--text-main); font-family: monospace; }
+        .copy-btn { background: none; border: none; color: var(--purple); cursor: pointer; font-size: 1rem; padding: 4px; }
+
+        .qr-container { text-align: center; margin: 20px 0; position: relative; }
+        .qr-box { width: 200px; height: 200px; background: white; border-radius: 16px; padding: 12px; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+        .qr-box img { width: 100%; height: 100%; object-fit: contain; }
+        .timer-badge { position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); background: var(--warning); color: #000; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 6px; }
+        .timer-badge.expired { background: var(--red); color: white; }
+
+        .btn { width: 100%; padding: 16px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; border: none; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; }
+        .btn-primary { background: var(--success); color: white; }
+        .btn-primary:hover { background: #059669; }
+        .btn-secondary { background: rgba(255,255,255,0.08); color: var(--text-muted); border: 1px solid var(--border); }        .btn-secondary:hover { background: rgba(255,255,255,0.12); color: var(--text-main); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .payment-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .method-card { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; position: relative; opacity: 0.6; cursor: not-allowed; }
+        .method-card.active { opacity: 1; border-color: var(--purple); background: rgba(124, 58, 237, 0.1); cursor: pointer; }
+        .method-card i { font-size: 1.8rem; margin-bottom: 8px; display: block; }
+        .method-card span { font-size: 0.9rem; font-weight: 600; }
+        .badge-soon { position: absolute; top: -8px; right: -8px; background: var(--purple); color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+
+        /* Modais Bloqueantes (App-Style) */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(11, 15, 25, 0.95); z-index: 9999; display: none; align-items: flex-end; justify-content: center; padding: 0; backdrop-filter: blur(5px); }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--card-bg); border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 24px; width: 100%; max-width: 500px; animation: slideUp 0.3s ease; max-height: 85vh; overflow-y: auto; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .modal-header { text-align: center; margin-bottom: 20px; }
+        .modal-icon { font-size: 3rem; margin-bottom: 12px; }
+        .modal h2 { font-size: 1.5rem; margin-bottom: 8px; }
+        .modal p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px; }
+        .modal textarea { width: 100%; padding: 14px; background: rgba(30, 35, 55, 0.7); border: 1px solid var(--border); border-radius: 10px; color: white; font-size: 0.95rem; outline: none; resize: none; min-height: 100px; margin-bottom: 16px; }
+        .modal textarea:focus { border-color: var(--purple); }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; font-size: 0.95rem; }
+        .modal-btn.primary { background: var(--purple); color: white; }
+        .modal-btn.primary:hover { background: #6d28d9; }
+        .modal-btn.secondary { background: rgba(255,255,255,0.1); color: var(--text-muted); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
+        <div class="page-title">Finalizar Pagamento</div>
+        <div class="spacer"></div>
+    </div>
+
+    <!-- Payment Methods -->
+    <div class="payment-methods">
+        <div class="method-card active" id="pixMethod">
+            <i class="fas fa-qrcode" style="color: var(--success);"></i>
+            <span>PIX</span>
+        </div>
+        <div class="method-card">
+            <span class="badge-soon">Em breve</span>
+            <i class="fas fa-credit-card" style="color: var(--text-muted);"></i>
+            <span>Cartão</span>
+        </div>    </div>
+
+    <!-- Step 1: UID Input -->
+    <div id="step1" class="card">
+        <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;"><i class="fas fa-fingerprint" style="color: var(--purple);"></i> Identificação</h3>
+        <div class="form-group">
+            <label>UID do Free Fire</label>
+            <input type="text" id="uidInput" placeholder="Ex: 123456789" inputmode="numeric" pattern="[0-9]*">
+            <div class="form-hint"><i class="fas fa-info-circle"></i> Necessário para enviar os diamantes</div>
+        </div>
+        <button class="btn btn-primary" id="generateQrBtn" disabled><i class="fas fa-qrcode"></i> Gerar QR Code</button>
+    </div>
+
+    <!-- Step 2: QR Code & Timer -->
+    <div id="step2" class="card hidden">
+        <div class="step-indicator">
+            <div class="step-dot active"></div>
+            <div class="step-dot active"></div>
+            <div class="step-dot"></div>
+        </div>
+        <div class="qr-container">
+            <div class="qr-box">
+                <img id="qrImage" src="" alt="QR Code PIX">
+            </div>
+            <div class="timer-badge" id="timerBadge"><i class="fas fa-clock"></i> <span id="timerText">05:00</span></div>
+        </div>
+        
+        <div class="pix-details">
+            <div class="pix-row">
+                <span class="pix-label">Nome</span>
+                <span class="pix-value">Gustavo Costa Silva</span>
+            </div>
+            <div class="pix-row">
+                <span class="pix-label">Chave PIX</span>
+                <span class="pix-value">89981249556</span>
+                <button class="copy-btn" onclick="copyPixKey()"><i class="fas fa-copy"></i></button>
+            </div>
+        </div>
+
+        <button class="btn btn-primary" id="confirmBtn"><i class="fas fa-check-circle"></i> Já realizei o pagamento</button>
+        <button class="btn btn-secondary" id="cancelBtn"><i class="fas fa-times-circle"></i> Cancelar pedido</button>
+    </div>
+
+    <!-- Modais -->
+    <!-- Success/Analysis Modal -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-icon" style="color: var(--success);"><i class="fas fa-check-circle"></i></div>
+                <h2>Pedido em Análise</h2>                <p>Recebemos seu comprovante! Sua compra está sendo processada e os diamantes serão enviados em breve.</p>
+            </div>
+            <button class="modal-btn primary" onclick="window.location.href='pedidos.html'">Acompanhar Pedido</button>
+        </div>
+    </div>
+
+    <!-- Cancel Reason Modal -->
+    <div class="modal-overlay" id="cancelModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-icon" style="color: var(--warning);"><i class="fas fa-exclamation-circle"></i></div>
+                <h2>Cancelar Pedido</h2>
+                <p>Conte-nos o motivo do cancelamento para melhorarmos nosso serviço.</p>
+            </div>
+            <textarea id="cancelReason" placeholder="Ex: Erro no UID, mudança de ideia, problemas no app..."></textarea>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" onclick="closeCancelModal()">Voltar</button>
+                <button class="modal-btn primary" id="submitCancelBtn">Confirmar Cancelamento</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maintenance/Ban Modals (Blocking) -->
+    <div class="modal-overlay" id="maintenanceModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-icon" style="color: var(--warning);"><i class="fas fa-tools"></i></div>
+                <h2>Site em Manutenção</h2>
+                <p id="maintenanceMessage">O sistema está passando por melhorias. Tente novamente mais tarde.</p>
+            </div>
+            <button class="modal-btn primary" onclick="window.location.reload()">Tentar Novamente</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="banModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-icon" style="color: var(--red);"><i class="fas fa-ban"></i></div>
+                <h2>Conta Suspensa</h2>
+                <p>Sua conta foi suspensa. Você não pode realizar compras no momento.</p>
+            </div>
+            <button class="modal-btn primary" onclick="window.location.href='banimento.html'">Ver Detalhes</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, push, get } from "./firebase-firestore-compat.js";
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
+            authDomain: "renda-cash-f3c91-default-rtdb.firebaseio.com",
+            databaseURL: "https://renda-cash-f3c91-default-rtdb.firebaseio.com",
+            projectId: "renda-cash-f3c91",            storageBucket: "renda-cash-f3c91.firebasestorage.app",
+            messagingSenderId: "600925903090",
+            appId: "1:346807213810:android:b05ec1bcab93f9bf747a6b",
+            measurementId: "G-BT9FB5CTNM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // State
+        let currentUser = null;
+        let timerInterval = null;
+        let timeLeft = 300; // 5 minutes in seconds
+
+        // UI Elements
+        const uidInput = document.getElementById('uidInput');
+        const generateQrBtn = document.getElementById('generateQrBtn');
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const qrImage = document.getElementById('qrImage');
+        const timerText = document.getElementById('timerText');
+        const timerBadge = document.getElementById('timerBadge');
+        const confirmBtn = document.getElementById('confirmBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const successModal = document.getElementById('successModal');
+        const cancelModal = document.getElementById('cancelModal');
+        const cancelReason = document.getElementById('cancelReason');
+        const submitCancelBtn = document.getElementById('submitCancelBtn');
+
+        // --- Auth & Status Checks (Blocking) ---
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            currentUser = user;
+
+            // Check Ban
+            const userSnap = await get(ref(db, `Usuarios/${user.uid}`));
+            if (userSnap.exists() && userSnap.val().status === 'banned') {
+                document.getElementById('banModal').classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        });
+        // Check Maintenance
+        onValue(ref(db, 'Manutencao'), (snapshot) => {
+            if (snapshot.exists() && snapshot.val().ativo === true) {
+                document.getElementById('maintenanceMessage').textContent = snapshot.val().mensagem || "Sistema em manutenção.";
+                document.getElementById('maintenanceModal').classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        });
+
+        // --- Step 1: UID Validation ---
+        uidInput.addEventListener('input', (e) => {
+            const val = e.target.value.replace(/\D/g, '');
+            e.target.value = val;
+            generateQrBtn.disabled = val.length < 8;
+        });
+
+        generateQrBtn.addEventListener('click', () => {
+            if (uidInput.value.length < 8) return;
+            
+            // Simulate QR Generation (Replace with real PIX payload in production)
+            const pixPayload = `00020126580014br.gov.bcb.pix0111899812495565204000053039865802BR5920GUSTAVO COSTA SILVA6009ARARIPINA62070503***6304A1B2`;
+            qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixPayload)}`;
+            
+            step1.classList.add('hidden');
+            step2.classList.remove('hidden');
+            startTimer();
+        });
+
+        // --- Timer Logic ---
+        function startTimer() {
+            timeLeft = 300;
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerBadge.classList.add('expired');
+                    timerText.textContent = 'EXPIRADO';
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<i class="fas fa-clock"></i> Tempo esgotado';
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+            timerText.textContent = `${m}:${s}`;        }
+
+        // --- Confirm Payment ---
+        confirmBtn.addEventListener('click', () => {
+            clearInterval(timerInterval);
+            successModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        // --- Cancel Flow ---
+        cancelBtn.addEventListener('click', () => {
+            clearInterval(timerInterval);
+            cancelModal.classList.add('active');
+        });
+
+        window.closeCancelModal = () => {
+            cancelModal.classList.remove('active');
+            startTimer(); // Resume timer if they go back
+        };
+
+        submitCancelBtn.addEventListener('click', async () => {
+            const reason = cancelReason.value.trim();
+            if (!reason) {
+                cancelReason.style.borderColor = 'var(--red)';
+                return;
+            }
+            cancelReason.style.borderColor = '';
+            submitCancelBtn.disabled = true;
+            submitCancelBtn.textContent = 'Enviando...';
+
+            try {
+                await push(ref(db, 'Suporte'), {
+                    nome: currentUser.displayName || 'Usuário',
+                    email: currentUser.email || 'N/A',
+                    assunto: 'Cancelamento de Pedido',
+                    assuntoKey: 'carrinho',
+                    mensagem: reason,
+                    data: new Date().toISOString(),
+                    lido: false
+                });
+                
+                cancelModal.classList.remove('active');
+                window.location.href = 'home.html';
+            } catch (err) {
+                alert('Erro ao registrar cancelamento. Tente novamente.');
+                submitCancelBtn.disabled = false;
+                submitCancelBtn.textContent = 'Confirmar Cancelamento';
+            }
+        });
+        // --- Utilities ---
+        window.copyPixKey = () => {
+            navigator.clipboard.writeText('89981249556').then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => btn.innerHTML = '<i class="fas fa-copy"></i>', 2000);
+            });
+        };
+    </script>
+</body>
+</html>

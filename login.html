@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar - MuciGems</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0b0f19; --card-bg: rgba(15, 20, 35, 0.88); --navy: #1e3a8a; --purple: #7c3aed;
+            --red: #dc2626; --red-hover: #b91c1c; --text-main: #f8fafc; --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08); --input-bg: rgba(30, 35, 55, 0.7); --success: #10b981;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        body {
+            background: radial-gradient(1200px 600px at 10% 10%, rgba(30, 58, 138, 0.15), transparent),
+                        radial-gradient(1000px 500px at 90% 90%, rgba(124, 58, 237, 0.12), transparent),
+                        var(--bg-dark);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center; color: var(--text-main); padding: 20px;
+        }
+        .container { width: 100%; max-width: 430px; text-align: center; }
+        .logo { font-size: 2.8rem; color: var(--purple); margin-bottom: 6px; }
+        h1 { background: linear-gradient(135deg, var(--navy), var(--purple)); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 2.2rem; font-weight: 800; margin-bottom: 4px; }
+        .tagline { color: var(--text-muted); margin-bottom: 28px; font-size: 0.95rem; }
+        .form-container { background: var(--card-bg); backdrop-filter: blur(14px); border: 1px solid var(--border); border-radius: 20px; padding: 28px; box-shadow: 0 10px 35px rgba(0,0,0,0.5); position: relative; }
+        .form { display: none; }
+        .form.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        h2 { font-size: 1.5rem; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 700; }
+        .subtitle { color: var(--text-muted); font-size: 0.92rem; margin-bottom: 22px; }
+        .input-group { text-align: left; margin-bottom: 14px; position: relative; }
+        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+        input[type="email"], input[type="password"], input[type="text"] {
+            width: 100%; padding: 12px 15px; background: var(--input-bg); border: 1px solid var(--border);
+            border-radius: 10px; color: white; font-size: 0.95rem; outline: none; transition: 0.25s;
+        }
+        input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2); }
+        .error { color: #ff6b6b; font-size: 0.75rem; display: none; margin-top: 5px; }
+        .input-group.invalid .error { display: block; }
+        .input-group.invalid input { border-color: var(--red); }
+        .options { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .remember-me { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 700; font-size: 0.95rem; }
+        .remember-me input { width: 18px; height: 18px; accent-color: var(--red); cursor: pointer; }
+        .forgot-link { color: #a78bfa; text-decoration: none; font-weight: 600; font-size: 0.92rem; cursor: pointer; }
+        .forgot-link:hover { text-decoration: underline; color: var(--purple); }
+        .btn-primary {
+            width: 100%; padding: 13px; background: linear-gradient(135deg, var(--red), var(--red-hover));
+            color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: 700;
+            cursor: pointer; transition: 0.25s; margin-bottom: 14px;
+        }        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35); }        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+        .switch-form { font-size: 0.92rem; color: var(--text-muted); margin-top: 12px; }
+        .switch-form a { color: var(--red); text-decoration: none; font-weight: 700; margin-left: 4px; cursor: pointer; }
+        .switch-form a:hover { text-decoration: underline; }
+        .terms { display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px; text-align: left; line-height: 1.4; }
+        .terms input { margin-top: 3px; accent-color: var(--purple); width: 16px; height: 16px; }
+        .terms a { color: #a78bfa; text-decoration: none; }
+        footer { margin-top: 24px; color: var(--text-muted); font-size: 0.82rem; opacity: 0.7; }
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 320px; }
+        .toast { background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--border); color: white; padding: 16px 20px; border-radius: 12px; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateX(120%); opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--red); }
+        .toast i { font-size: 1.2rem; flex-shrink: 0; }
+        .toast.success i { color: var(--success); }
+        .toast.error i { color: var(--red); }
+        .toast p { font-size: 0.9rem; margin: 0; }
+    </style>
+</head>
+<body>
+    <div id="toast-container"></div>
+    <div class="container">
+        <div class="logo"><i class="fas fa-gem"></i></div>
+        <h1>MuciGems</h1>
+        <p class="tagline">Seu universo de oportunidades</p>
+        <div class="form-container">
+            <!-- LOGIN -->
+            <form id="loginForm" class="form active">
+                <h2><i class="fas fa-lock"></i> Entrar</h2>
+                <p class="subtitle">Entre na sua conta agora mesmo</p>
+                <div class="input-group">
+                    <label>E-mail</label>
+                    <input type="email" id="loginEmail" placeholder="seu@email.com" required>
+                    <span class="error">E-mail inválido</span>
+                </div>
+                <div class="input-group">
+                    <label>Senha</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    <span class="error">Senha incorreta</span>
+                </div>
+                <div class="options">
+                    <label class="remember-me"><input type="checkbox" checked><span>Lembrar de mim</span></label>
+                    <a href="#" class="forgot-link" data-target="forgotForm">Esqueceu a senha?</a>
+                </div>
+                <button type="submit" class="btn-primary" id="btnLogin">Entrar na conta</button>
+                <p class="switch-form">Não tem conta? <a href="#" data-target="registerForm">Cadastrar</a></p>
+            </form>
+
+            <!-- CADASTRO -->
+            <form id="registerForm" class="form">                <h2><i class="fas fa-user-plus"></i> Criar Conta</h2>
+                <p class="subtitle">Cadastre sua conta agora mesmo</p>
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="regUsername" placeholder="Escolha um nome de usuário" required>
+                </div>
+                <div class="input-group">
+                    <label>E-mail</label>
+                    <input type="email" id="regEmail" placeholder="seu@email.com" required>
+                    <span class="error">E-mail inválido</span>
+                </div>
+                <div class="input-group">
+                    <label>Senha</label>
+                    <input type="password" id="regPassword" placeholder="Mínimo 8 caracteres" required minlength="8">
+                    <span class="error">Senha muito curta</span>
+                </div>
+                <div class="input-group">
+                    <label>Confirmar senha</label>
+                    <input type="password" id="regConfirm" placeholder="Repita a senha" required>
+                    <span class="error">Senhas não conferem</span>
+                </div>
+                <label class="terms">
+                    <input type="checkbox" id="regTerms" required>
+                    <span>Concordo com os <a href="termos.html">Termos de Uso</a> e <a href="politica.html">Política de Privacidade</a></span>
+                </label>
+                <button type="submit" class="btn-primary" id="btnRegister">Criar conta grátis</button>
+                <p class="switch-form">Já tem conta? <a href="#" data-target="loginForm">Entrar</a></p>
+            </form>
+
+            <!-- RECUPERAR SENHA -->
+            <form id="forgotForm" class="form">
+                <h2><i class="fas fa-key"></i> Recuperar Senha</h2>
+                <p class="subtitle">MuciGems - Coloque seu e-mail e receba o link de redefinição de senha</p>
+                <div class="input-group">
+                    <label>E-mail cadastrado</label>
+                    <input type="email" id="forgotEmail" placeholder="seu@email.com" required>
+                    <span class="error">E-mail inválido</span>
+                </div>
+                <button type="submit" class="btn-primary" id="btnForgot">Enviar link de recuperação</button>
+                <p class="switch-form"><a href="#" data-target="loginForm"><i class="fas fa-arrow-left"></i> Voltar para login</a></p>
+            </form>
+        </div>
+        <footer>MuciGems © 2026</footer>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, push, onDisconnect } from "./firebase-firestore-compat.js";
+                const firebaseConfig = {
+            apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
+            authDomain: "renda-cash-f3c91-default-rtdb.firebaseio.com",
+            databaseURL: "https://renda-cash-f3c91-default-rtdb.firebaseio.com",
+            projectId: "renda-cash-f3c91",            storageBucket: "renda-cash-f3c91.firebasestorage.app",
+            messagingSenderId: "600925903090",
+            appId: "1:346807213810:android:b05ec1bcab93f9bf747a6b",
+            measurementId: "G-BT9FB5CTNM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // --- SISTEMA DE MÉTRICAS ---
+        let currentUser = null;
+
+        async function logActivity(acao, tipo, detalhes = '') {
+            if (!currentUser) return;
+            await set(ref(db, `Usuarios/${currentUser.uid}/lastSeen`), Date.now());
+            await push(ref(db, 'Atividades'), {
+                uid: currentUser.uid,
+                usuarioNome: currentUser.displayName || currentUser.email || 'Usuário',
+                acao: acao,
+                tipo: tipo,
+                detalhes: detalhes,
+                pagina: window.location.pathname,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // --- RASTREAMENTO DE PRESENÇA (ONLINE/OFFLINE) ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                set(ref(db, `Usuarios/${user.uid}/online`), true);
+                onDisconnect(ref(db, `Usuarios/${user.uid}/online`)).set(false);
+                onDisconnect(ref(db, `Usuarios/${user.uid}/lastSeen`)).set(Date.now());
+                logActivity('entrou no sistema', 'login');
+            } else {
+                currentUser = null;
+            }
+        });
+
+        // --- TOAST SYSTEM ---
+        function showToast(message, type) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;            const icon = type === 'success' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-times-circle"></i>';
+            toast.innerHTML = `${icon} <p>${message}</p>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 50);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3500);
+        }
+
+        // --- WAIT FOR DOM TO BE READY ---
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- NAVEGAÇÃO ENTRE TELAS ---
+            const navLinks = document.querySelectorAll('.switch-form a, .forgot-link');
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('data-target');
+                    const targetForm = document.getElementById(targetId);
+                    if (!targetForm) return;
+                    document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+                    targetForm.classList.add('active');
+                    document.querySelectorAll('.input-group').forEach(g => g.classList.remove('invalid'));
+                });
+            });
+
+            // --- VALIDAÇÃO ---
+            window.validateForm = function(formId) {
+                const form = document.getElementById(formId);
+                if (!form) return false;
+                let valid = true;
+                form.querySelectorAll('.input-group').forEach(g => g.classList.remove('invalid'));
+                form.querySelectorAll('input[type="email"]').forEach(input => {
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value.trim())) {
+                        input.closest('.input-group').classList.add('invalid');
+                        valid = false;
+                    }
+                });
+                if (formId === 'registerForm') {
+                    const pass = document.getElementById('regPassword').value;
+                    const confirm = document.getElementById('regConfirm').value;
+                    if (pass.length < 8) { document.getElementById('regPassword').closest('.input-group').classList.add('invalid'); valid = false; }
+                    if (pass !== confirm) { document.getElementById('regConfirm').closest('.input-group').classList.add('invalid'); valid = false; }
+                    if (!document.getElementById('regTerms').checked) { showToast('Aceite os Termos de Uso para continuar.', 'error'); valid = false; }
+                }
+                return valid;
+            };
+
+            // --- LOGIN ---            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    if (!window.validateForm('loginForm')) return;
+                    const btn = e.target.querySelector('#btnLogin');
+                    const email = document.getElementById('loginEmail').value.trim();
+                    btn.textContent = 'Entrando...'; 
+                    btn.disabled = true;
+                    try {
+                        await signInWithEmailAndPassword(auth, email, document.getElementById('loginPassword').value);
+                        showToast('Login realizado com sucesso!', 'success');
+                        let destino = 'home.html'; 
+                        try {
+                            const adminRef = ref(db, `admins/${currentUser.uid}`);
+                            const snapshot = await Promise.race([
+                                get(adminRef),
+                                new Promise((_, reject) => setTimeout(() => reject(new Error('DB Timeout')), 5000))
+                            ]);
+                            if (snapshot.exists() && snapshot.val() === true) destino = 'admin.html';
+                        } catch (dbErr) { console.warn('Falha ao verificar permissões.', dbErr); }
+                        setTimeout(() => window.location.href = destino, 1000);
+                    } catch (err) {
+                        let msg = 'E-mail ou senha incorretos.';
+                        if (err.code === 'auth/user-not-found') msg = 'Usuário não encontrado.';
+                        if (err.code === 'auth/wrong-password') msg = 'Senha incorreta.';
+                        if (err.code === 'auth/invalid-email') msg = 'Formato de e-mail inválido.';
+                        if (err.code === 'auth/too-many-requests') msg = 'Muitas tentativas. Tente mais tarde.';
+                        showToast(msg, 'error');
+                        btn.textContent = 'Entrar na conta'; 
+                        btn.disabled = false;
+                    }
+                });
+            }
+
+            // --- CADASTRO ---
+            const registerForm = document.getElementById('registerForm');
+            if (registerForm) {
+                registerForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    if (!window.validateForm('registerForm')) return;
+                    const btn = e.target.querySelector('#btnRegister');
+                    const username = document.getElementById('regUsername').value.trim();
+                    const email = document.getElementById('regEmail').value.trim();
+                    btn.textContent = 'Criando conta...'; 
+                    btn.disabled = true;
+                    try {
+                        const userCred = await createUserWithEmailAndPassword(auth, email, document.getElementById('regPassword').value);
+                        await set(ref(db, `Usuarios/${userCred.user.uid}`), {
+                            username: username,                            email: email,
+                            createdAt: new Date().toISOString(),
+                            status: 'active'
+                        });
+                        // Métrica: Cadastro
+                        await logActivity('criou uma nova conta', 'cadastro', `Username: ${username}`);
+                        
+                        showToast('Sua conta foi criada!', 'success');
+                        registerForm.reset();
+                        setTimeout(() => window.location.href = 'home.html', 1500);
+                    } catch (err) {
+                        let msg = 'Erro ao criar conta.';
+                        if (err.code === 'auth/email-already-in-use') msg = 'Este e-mail já está cadastrado.';
+                        if (err.code === 'auth/weak-password') msg = 'A senha deve ter no mínimo 8 caracteres.';
+                        showToast(msg, 'error');
+                    } finally { 
+                        btn.textContent = 'Criar conta grátis'; 
+                        btn.disabled = false; 
+                    }
+                });
+            }
+
+            // --- RECUPERAR SENHA ---
+            const forgotForm = document.getElementById('forgotForm');
+            if (forgotForm) {
+                forgotForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    if (!window.validateForm('forgotForm')) return;
+                    const btn = e.target.querySelector('#btnForgot');
+                    const email = document.getElementById('forgotEmail').value.trim();
+                    btn.textContent = 'Enviando...'; 
+                    btn.disabled = true;
+                    try {
+                        await sendPasswordResetEmail(auth, email);
+                        // Métrica: Solicitação de Senha
+                        if (currentUser) {
+                            await logActivity('solicitou recuperação de senha', 'senha', `E-mail: ${email}`);
+                        }
+                        showToast('Link enviado! Verifique sua caixa de entrada e spam.', 'success');
+                        setTimeout(() => {
+                            document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+                            document.getElementById('loginForm').classList.add('active');
+                        }, 1500);
+                    } catch (err) {
+                        let msg = 'Erro ao processar solicitação.';
+                        if (err.code === 'auth/invalid-email') msg = 'Formato de e-mail inválido.';
+                        if (err.code === 'auth/user-not-found') msg = 'E-mail não cadastrado.';
+                        showToast(msg, 'error');
+                    } finally { 
+                        btn.textContent = 'Enviar link de recuperação';                         btn.disabled = false; 
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

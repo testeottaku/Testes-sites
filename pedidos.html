@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Meus Pedidos | MuciGems</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg-dark: #0b0f19; --card-bg: rgba(15, 20, 35, 0.88); --navy: #1e3a8a; --purple: #7c3aed; --red: #dc2626; --text-main: #f8fafc; --text-muted: #94a3b8; --border: rgba(255, 255, 255, 0.08); --success: #10b981; --warning: #f59e0b; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+        body { background: radial-gradient(1200px 600px at 10% 10%, rgba(30, 58, 138, 0.15), transparent), radial-gradient(1000px 500px at 90% 90%, rgba(124, 58, 237, 0.12), transparent), var(--bg-dark); color: var(--text-main); min-height: 100vh; padding-bottom: 40px; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(10px); }
+        .back-btn { background: none; border: none; color: var(--text-main); font-size: 1.2rem; cursor: pointer; }
+        .page-title { font-weight: 700; font-size: 1.2rem; }
+        
+        .container { max-width: 800px; margin: 20px auto; padding: 0 16px; }
+        
+        .order-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; position: relative; overflow: hidden; }
+        .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .order-id { font-size: 0.8rem; color: var(--text-muted); font-family: monospace; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 6px; }
+        .order-date { font-size: 0.8rem; color: var(--text-muted); }
+        
+        .order-product { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+        .order-price { font-size: 1.2rem; font-weight: 800; color: var(--success); margin-bottom: 12px; }
+        
+        .order-details { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; font-size: 0.85rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+        .order-details span strong { color: var(--text-main); }
+        
+        .status-badge { position: absolute; top: 0; right: 0; padding: 6px 12px; border-bottom-left-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+        .status-analise { background: var(--warning); color: #000; }
+        .status-entregue { background: var(--success); color: #000; }
+        .status-recusado { background: var(--red); color: white; }
+        
+        .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
+        .empty-state i { font-size: 3rem; margin-bottom: 12px; opacity: 0.5; }
+
+        /* Modais (Mesmos de antes) */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(11, 15, 25, 0.95); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 30px 24px; max-width: 400px; width: 100%; text-align: center; animation: modalPop 0.3s ease; }
+        @keyframes modalPop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .modal-icon { font-size: 3.5rem; margin-bottom: 16px; }
+        .modal h2 { font-size: 1.5rem; margin-bottom: 8px; }
+        .modal p { color: var(--text-muted); margin-bottom: 20px; }
+        .btn-modal { width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; }
+        .btn-modal.primary { background: var(--purple); color: white; }
+        .btn-modal.secondary { background: rgba(255,255,255,0.1); color: var(--text-muted); margin-top: 10px; }
+    </style>
+</head><body>
+    <div class="top-bar">
+        <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
+        <div class="page-title">Meus Pedidos</div>
+        <div style="width: 36px;"></div>
+    </div>
+
+    <div class="container" id="ordersContainer">
+        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Carregando...</p></div>
+    </div>
+
+    <!-- Modais Bloqueantes -->
+    <div class="modal-overlay" id="banModal">
+        <div class="modal">
+            <div class="modal-icon" style="color: var(--red);"><i class="fas fa-ban"></i></div>
+            <h2>Conta Suspensa</h2>
+            <p>Você não pode acessar esta área.</p>
+            <button class="btn-modal primary" onclick="window.location.href='banimento.html'">Ver Detalhes</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="maintenanceModal">
+        <div class="modal">
+            <div class="modal-icon" style="color: var(--warning);"><i class="fas fa-tools"></i></div>
+            <h2>Em Manutenção</h2>
+            <p id="maintenanceMessage">Sistema indisponível.</p>
+            <button class="btn-modal primary" onclick="window.location.reload()">Tentar Novamente</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, get } from "./firebase-firestore-compat.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
+            authDomain: "renda-cash-f3c91-default-rtdb.firebaseio.com",
+            databaseURL: "https://renda-cash-f3c91-default-rtdb.firebaseio.com",
+            projectId: "renda-cash-f3c91",            storageBucket: "renda-cash-f3c91.firebasestorage.app",
+            messagingSenderId: "600925903090",
+            appId: "1:346807213810:android:b05ec1bcab93f9bf747a6b",
+            measurementId: "G-BT9FB5CTNM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        let currentUser = null;
+
+        // --- 1. Auth & Bloqueios ---
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.href = 'login.html'; return; }
+            currentUser = user;
+
+            // Checar Banimento
+            const userSnap = await get(ref(db, `Usuarios/${user.uid}`));
+            if (userSnap.exists() && userSnap.val().status === 'banned') {
+                document.getElementById('banModal').classList.add('active');
+            }
+            
+            // Carregar Pedidos
+            loadOrders(user.uid);
+        });
+
+        // Checar Manutenção
+        onValue(ref(db, 'Manutencao'), (snapshot) => {
+            if (snapshot.exists() && snapshot.val().ativo === true) {
+                document.getElementById('maintenanceMessage').textContent = snapshot.val().mensagem;
+                document.getElementById('maintenanceModal').classList.add('active');
+            }
+        });
+
+        // --- 2. Carregar Pedidos ---
+        function loadOrders(userId) {
+            const ordersRef = ref(db, 'Pedidos');
+            onValue(ordersRef, (snapshot) => {
+                const container = document.getElementById('ordersContainer');
+                container.innerHTML = '';
+                
+                let orders = [];
+                snapshot.forEach(child => {
+                    const order = child.val();
+                    order.id = child.key;
+                    orders.push(order);
+                });
+
+                // Filtrar apenas os pedidos DESTE usuário
+                const myOrders = orders.filter(o => o.usuarioId === userId).sort((a, b) => new Date(b.data) - new Date(a.data));
+
+                if (myOrders.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-receipt"></i>
+                            <p>Você ainda não tem pedidos.</p>
+                            <button class="btn-modal primary" style="margin-top: 15px; width: auto; padding: 10px 20px;" onclick="window.location.href='home.html'">Ir para a Loja</button>
+                        </div>`;
+                    return;                }
+
+                myOrders.forEach(order => {
+                    const date = new Date(order.data).toLocaleDateString('pt-BR');
+                    const statusClass = order.status === 'entregue' ? 'entregue' : order.status === 'recusado' ? 'recusado' : 'analise';
+                    const statusText = order.status === 'entregue' ? 'Entregue' : order.status === 'recusado' ? 'Recusado' : 'Em Análise';
+                    
+                    const card = document.createElement('div');
+                    card.className = 'order-card';
+                    card.innerHTML = `
+                        <div class="status-badge status-${statusClass}">${statusText}</div>
+                        <div class="order-header">
+                            <span class="order-id">#${order.id.slice(-6).toUpperCase()}</span>
+                            <span class="order-date">${date}</span>
+                        </div>
+                        <div class="order-product">${order.produtoNome}</div>
+                        <div class="order-price">R$ ${parseFloat(order.valor).toFixed(2)}</div>
+                        <div class="order-details">
+                            <span><strong>UID FF:</strong> ${order.uidFF}</span>
+                            <span><strong>Status:</strong> ${statusText}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            });
+        }
+    </script>
+</body>
+</html>

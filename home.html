@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Loja | MuciGems</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0b0f19; --card-bg: rgba(15, 20, 35, 0.88); --navy: #1e3a8a; 
+            --purple: #7c3aed; --red: #dc2626; --text-main: #f8fafc; --text-muted: #94a3b8; 
+            --border: rgba(255, 255, 255, 0.08); --success: #10b981; --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: radial-gradient(1200px 600px at 10% 10%, rgba(30, 58, 138, 0.15), transparent), radial-gradient(1000px 500px at 90% 90%, rgba(124, 58, 237, 0.12), transparent), var(--bg-dark); color: var(--text-main); min-height: 100vh; padding-bottom: 40px; overflow-x: hidden; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(10px); }
+        .menu-btn { background: none; border: none; color: var(--text-main); font-size: 1.3rem; cursor: pointer; }
+        .logo { font-weight: 800; font-size: 1.3rem; background: linear-gradient(135deg, var(--navy), var(--purple)); -webkit-background-clip: text; color: transparent; }
+        
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .drawer-overlay.open { opacity: 1; visibility: visible; }
+        .drawer { position: fixed; top: 0; left: 0; width: 280px; height: 100vh; background: var(--card-bg); border-right: 1px solid var(--border); z-index: 100; transform: translateX(-100%); transition: 0.3s ease; display: flex; flex-direction: column; }
+        .drawer.open { transform: translateX(0); }
+        .drawer-header { padding: 24px; border-bottom: 1px solid var(--border); text-align: center; }
+        .drawer-header i { font-size: 2rem; color: var(--purple); margin-bottom: 8px; }
+        .drawer-header h2 { font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
+        .drawer-links { flex: 1; padding: 16px; overflow-y: auto; }
+        
+        .drawer-link { position: relative; display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: var(--text-muted); text-decoration: none; font-weight: 500; border-radius: 10px; margin-bottom: 4px; transition: 0.2s; cursor: pointer; }
+        .drawer-link:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
+        .drawer-link i { width: 20px; text-align: center; }
+        
+        /* Estilo do Badge Usuário */
+        .notif-badge {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: var(--red); color: white; font-size: 0.7rem; font-weight: 700;
+            min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .notif-badge:empty, .notif-badge[data-count="0"] { display: none; }
+
+        .drawer-footer { padding: 20px; border-top: 1px solid var(--border); }
+        .logout-btn { display: flex; align-items: center; gap: 10px; color: var(--red); text-decoration: none; font-weight: 600; }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+        .page-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 24px; }
+        
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+        .product-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 20px; text-align: center; backdrop-filter: blur(12px); transition: 0.2s; }        .product-card:hover { transform: translateY(-4px); border-color: var(--purple); }
+        .product-icon { font-size: 2.2rem; color: var(--purple); margin-bottom: 12px; }
+        .product-name { font-weight: 700; margin-bottom: 4px; }
+        .product-qty { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px; }
+        .product-price { font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 16px; }
+        .btn-buy { width: 100%; padding: 10px; background: linear-gradient(135deg, var(--red), #b91c1c); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-buy:hover { box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); }
+        .btn-buy:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .empty-state { text-align: center; grid-column: 1 / -1; padding: 40px; color: var(--text-muted); }
+        .empty-state i { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
+        
+        /* Modais Bloqueantes */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(11, 15, 25, 0.95); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); pointer-events: auto; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 30px 24px; max-width: 420px; width: 100%; text-align: center; animation: modalPop 0.3s ease; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        @keyframes modalPop { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .modal-icon { font-size: 3.5rem; margin-bottom: 16px; }
+        .modal h2 { font-size: 1.6rem; margin-bottom: 10px; color: var(--text-main); }
+        .modal p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px; }
+        .modal-details { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; text-align: left; font-size: 0.9rem; }
+        .modal-details p { margin-bottom: 8px; }
+        .modal-details strong { color: var(--text-main); }
+        .btn-modal { width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; border: none; transition: 0.2s; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-modal.primary { background: var(--purple); color: white; }
+        .btn-modal.primary:hover { background: #6d28d9; transform: translateY(-2px); }
+        .btn-modal.secondary { background: rgba(255,255,255,0.08); color: var(--text-muted); border: 1px solid var(--border); }
+        .btn-modal.secondary:hover { background: rgba(255,255,255,0.12); color: var(--text-main); }
+
+        @media (max-width: 480px) { 
+            .products-grid { grid-template-columns: repeat(2, 1fr); } 
+            .modal { padding: 24px 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
+        <div class="logo">MuciGems</div>
+        <div style="width: 24px;"></div>
+    </div>
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+    <aside class="drawer" id="drawer">
+        <div class="drawer-header"><i class="fas fa-gem"></i><h2>MuciGems</h2></div>
+        <nav class="drawer-links">
+            <a href="home.html" class="drawer-link" style="color:var(--purple);background:rgba(124,58,237,0.1);"><i class="fas fa-store"></i> Loja</a>
+            <a href="pedidos.html" class="drawer-link"><i class="fas fa-receipt"></i> Pedidos</a>
+            <!-- Link Notificações com Badge -->
+            <a href="notificacoes.html" class="drawer-link" onclick="markUserNotifsAsRead()">
+                <i class="fas fa-bell"></i> Notificações                <span class="notif-badge" id="userNotifBadge">0</span>
+            </a>
+            <a href="perfil.html" class="drawer-link"><i class="fas fa-user"></i> Perfil</a>
+            <a href="sobre.html" class="drawer-link"><i class="fas fa-info-circle"></i> Sobre Nós</a>
+            <a href="suporte.html" class="drawer-link"><i class="fas fa-headset"></i> Suporte</a>
+            <a href="devs.html" class="drawer-link"><i class="fas fa-code"></i> Devs</a>
+            <a href="atualizacoes.html" class="drawer-link"><i class="fas fa-rotate"></i> Atualizações</a>
+            <a href="versao.html" class="drawer-link"><i class="fas fa-code-branch"></i> Versão</a>
+            <a href="politica.html" class="drawer-link"><i class="fas fa-shield-halved"></i> Privacidade</a>
+            <a href="termos.html" class="drawer-link"><i class="fas fa-file-contract"></i> Termos</a>
+        </nav>
+        <div class="drawer-footer"><a href="login.html" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Sair</a></div>
+    </aside>
+    <main class="container">
+        <h1 class="page-title">Pacotes de Diamantes</h1>
+        <div class="products-grid" id="productsGrid">
+            <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Carregando produtos...</p></div>
+        </div>
+    </main>
+
+    <!-- Modais (Banimento/Manutenção) -->
+    <div class="modal-overlay" id="banModal">
+        <div class="modal">
+            <div class="modal-icon" style="color: var(--red);"><i class="fas fa-ban"></i></div>
+            <h2>Conta Suspensa</h2>
+            <p>Sua conta foi suspensa permanentemente devido a violações dos termos de uso.</p>
+            <div class="modal-details">
+                <p><strong>Data:</strong> <span id="banDate">--/--/----</span></p>
+                <p><strong>Motivo:</strong> <span id="banReason">Violação dos termos</span></p>
+            </div>
+            <button class="btn-modal primary" onclick="window.location.href='banimento.html'"><i class="fas fa-info-circle"></i> Ver Detalhes</button>
+            <button class="btn-modal secondary" onclick="window.location.href='suporte.html'"><i class="fas fa-envelope"></i> Entrar em Contato</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="maintenanceModal">
+        <div class="modal">
+            <div class="modal-icon" style="color: var(--warning);"><i class="fas fa-tools"></i></div>
+            <h2>Site em Manutenção</h2>
+            <p id="maintenanceMessage">O sistema está passando por melhorias.</p>
+            <div class="modal-details">
+                <p><strong>Status:</strong> Indisponível temporariamente</p>
+            </div>
+            <button class="btn-modal primary" onclick="window.location.href='manutencao.html'"><i class="fas fa-external-link-alt"></i> Ver Detalhes</button>
+            <button class="btn-modal secondary" onclick="window.location.reload()"><i class="fas fa-sync-alt"></i> Tentar Novamente</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, update } from "./firebase-firestore-compat.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
+            authDomain: "renda-cash-f3c91-default-rtdb.firebaseio.com",
+            databaseURL: "https://renda-cash-f3c91-default-rtdb.firebaseio.com",
+            projectId: "renda-cash-f3c91",            storageBucket: "renda-cash-f3c91.firebasestorage.app",
+            messagingSenderId: "600925903090",
+            appId: "1:346807213810:android:b05ec1bcab93f9bf747a6b",
+            measurementId: "G-BT9FB5CTNM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        const menuBtn = document.getElementById('menuBtn');
+        const drawer = document.getElementById('drawer');
+        const overlay = document.getElementById('drawerOverlay');
+        function toggleDrawer() { drawer.classList.toggle('open'); overlay.classList.toggle('open'); }
+        menuBtn.addEventListener('click', toggleDrawer);
+        overlay.addEventListener('click', toggleDrawer);
+
+        let currentUser = null;
+
+        // --- Verificação de Manutenção ---
+        onValue(ref(db, 'Manutencao'), (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                if (data.ativo === true && currentUser) {
+                    document.getElementById('maintenanceMessage').textContent = data.mensagem || "Sistema em manutenção.";
+                    document.getElementById('maintenanceModal').classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+        });
+
+        // --- Auth e Status do Usuário ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loadUserBadge(user.uid); // Inicia badge
+                
+                // Verifica Banimento
+                onValue(ref(db, `Usuarios/${user.uid}`), (snapshot) => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        if (userData.status === 'banned') {                            document.getElementById('banDate').textContent = userData.banDate ? new Date(userData.banDate).toLocaleDateString('pt-BR') : '--/--/----';
+                            document.getElementById('banReason').textContent = userData.banReason || 'Violação dos termos';
+                            document.getElementById('banModal').classList.add('active');
+                            document.body.style.overflow = 'hidden';
+                        }
+                    }
+                });
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // --- LÓGICA DO BADGE DE NOTIFICAÇÃO USUÁRIO ---
+        function loadUserBadge(uid) {
+            const badge = document.getElementById('userNotifBadge');
+            const userNotifsRef = ref(db, `Notificacoes/${uid}`);
+
+            onValue(userNotifsRef, (snapshot) => {
+                if (!snapshot.exists()) {
+                    badge.textContent = '0';
+                    badge.setAttribute('data-count', '0');
+                    return;
+                }
+
+                let unreadCount = 0;
+                snapshot.forEach(child => {
+                    if (child.val().lido !== true) {
+                        unreadCount++;
+                    }
+                });
+
+                badge.textContent = unreadCount;
+                badge.setAttribute('data-count', unreadCount);
+            });
+        }
+
+        // Função global para marcar como lido ao clicar no link
+        window.markUserNotifsAsRead = () => {
+            if (!currentUser) return;
+            const userNotifsRef = ref(db, `Notificacoes/${currentUser.uid}`);
+            
+            onValue(userNotifsRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const updates = {};
+                    snapshot.forEach(child => {
+                        if (child.val().lido !== true) {
+                            updates[child.key + '/lido'] = true;
+                        }
+                    });
+                    if (Object.keys(updates).length > 0) {                        update(userNotifsRef, updates);
+                    }
+                }
+            }, { onlyOnce: true });
+        };
+
+        // --- Carregar Produtos ---
+        const productsRef = ref(db, 'Produtos');
+        onValue(productsRef, (snapshot) => {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = '';
+
+            if (!snapshot.exists()) {
+                grid.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i><p>Nenhum produto disponível.</p></div>';
+                return;
+            }
+
+            const activeProducts = [];
+            snapshot.forEach(child => {
+                const p = child.val();
+                if (p.status === 'Ativo') activeProducts.push({ id: child.key, ...p });
+            });
+
+            if (activeProducts.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i><p>Nenhum produto ativo.</p></div>';
+                return;
+            }
+
+            activeProducts.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                const price = parseFloat(p.preco).toFixed(2).replace('.', ',');
+                let qtyText = p.tipo === 'passe-elite' ? 'Mensal' : `${p.quantidade} Diamantes`;
+
+                card.innerHTML = `
+                    <div class="product-icon"><i class="fas fa-gem"></i></div>
+                    <div class="product-name">${p.nome || 'Pacote'}</div>
+                    <div class="product-qty">${qtyText}</div>
+                    <div class="product-price">R$ ${price}</div>
+                    <button class="btn-buy" onclick="window.location.href='pagamento.html?id=${p.id}'">Comprar</button>
+                `;
+                grid.appendChild(card);
+            });
+        });
+    </script>
+</body>
+</html>

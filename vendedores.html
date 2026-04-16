@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vendedores | MuciGems</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0b0f19; --card-bg: rgba(15, 20, 35, 0.88); --navy: #1e3a8a; 
+            --purple: #7c3aed; --red: #dc2626; --text-main: #f8fafc; --text-muted: #94a3b8; 
+            --border: rgba(255, 255, 255, 0.08); --success: #10b981; --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: radial-gradient(1200px 600px at 10% 10%, rgba(30, 58, 138, 0.15), transparent), radial-gradient(1000px 500px at 90% 90%, rgba(124, 58, 237, 0.12), transparent), var(--bg-dark); color: var(--text-main); min-height: 100vh; overflow-x: hidden; padding-bottom: 20px; }
+        
+        .loading-screen { position: fixed; inset: 0; background: var(--bg-dark); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.4s, visibility 0.4s; }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .loading-spinner { width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--purple); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--text-muted); font-size: 0.95rem; }
+
+        .admin-layout { display: flex; min-height: 100vh; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s; }
+        .admin-layout.visible { opacity: 1; visibility: visible; }
+        
+        .sidebar { width: 260px; background: var(--card-bg); border-right: 1px solid var(--border); padding: 24px 0; display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; transition: transform 0.3s; overflow-y: auto; }
+        .sidebar-header { padding: 0 24px 24px; border-bottom: 1px solid var(--border); text-align: center; }
+        .sidebar-header i { font-size: 2rem; color: var(--purple); margin-bottom: 8px; }
+        .sidebar-header h2 { background: linear-gradient(135deg, var(--navy), var(--purple)); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 1.4rem; font-weight: 800; }
+        .admin-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-top: 8px; }
+        .nav-links { flex: 1; padding: 16px 12px; }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 13px 16px; color: var(--text-muted); text-decoration: none; font-weight: 500; border-radius: 10px; margin-bottom: 4px; transition: 0.2s; }
+        .nav-link:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
+        .nav-link.active { background: rgba(124, 58, 237, 0.15); color: var(--purple); font-weight: 600; }
+        .nav-link i { width: 20px; text-align: center; }
+        .sidebar-footer { padding: 20px 24px; border-top: 1px solid var(--border); }
+        .logout-btn { display: flex; align-items: center; gap: 10px; color: var(--red); text-decoration: none; font-weight: 600; font-size: 0.9rem; cursor: pointer; padding: 10px; border-radius: 8px; }
+        .logout-btn:hover { background: rgba(255,255,255,0.05); color: #f87171; }
+
+        .main-content { margin-left: 260px; flex: 1; padding: 32px; transition: margin 0.3s; max-width: 100%; }
+        .page-header { margin-bottom: 24px; }
+        .page-header h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .page-header p { color: var(--text-muted); font-size: 0.9rem; }
+
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-mini { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+        .stat-mini .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+        .stat-mini .value { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; backdrop-filter: blur(12px); margin-bottom: 20px; }        .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .card-header h3 { font-size: 1rem; font-weight: 700; }
+        
+        .search-box { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 0 12px; transition: 0.2s; flex: 1; max-width: 250px; }
+        .search-box:focus-within { border-color: var(--purple); }
+        .search-box i { color: var(--text-muted); margin-right: 8px; }
+        .search-box input { background: transparent; border: none; color: var(--text-main); padding: 10px 0; outline: none; font-size: 0.9rem; width: 100%; }
+        .search-box input::placeholder { color: var(--text-muted); }
+
+        .btn-add { background: var(--purple); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .btn-add:hover { background: #6d28d9; }
+
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+        th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.02); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 2; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+        
+        .user-name { font-weight: 600; color: var(--text-main); font-size: 0.95rem; }
+        .user-email { color: var(--text-muted); font-size: 0.9rem; }
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; display: inline-block; text-transform: uppercase; }
+        .badge-active { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .badge-inactive { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+        .actions { display: flex; gap: 6px; flex-wrap: nowrap; }
+        .action-btn { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--text-muted); cursor: pointer; transition: 0.2s; border: none; font-size: 0.9rem; }
+        .action-btn:active { transform: scale(0.95); }
+        .action-btn:hover { background: rgba(124, 58, 237, 0.2); color: var(--purple); }
+        .action-btn.danger:hover { background: rgba(220, 38, 38, 0.2); color: var(--red); }
+        .action-btn.warning:hover { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+
+        .mobile-toggle { display: none; position: fixed; top: 16px; left: 16px; z-index: 200; width: 42px; height: 42px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; align-items: center; justify-content: center; color: var(--text-main); cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(2px); }
+        .overlay.open { display: block; }
+
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { background: var(--card-bg); border: 1px solid var(--border); color: white; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateX(120%); opacity: 0; transition: 0.4s; pointer-events: auto; max-width: 300px; }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--red); }
+        .toast i { font-size: 1rem; flex-shrink: 0; }
+        .toast.success i { color: var(--success); }
+        .toast.error i { color: var(--red); }
+        .toast p { font-size: 0.85rem; margin: 0; line-height: 1.3; }
+
+        /* MODAIS */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; animation: modalIn 0.3s ease; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }        @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        
+        .modal h3 { font-size: 1.1rem; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
+        .modal .form-group { margin-bottom: 14px; text-align: left; }
+        .modal label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
+        .modal input, .modal select { width: 100%; padding: 12px; background: rgba(30, 35, 55, 0.7); border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 0.95rem; outline: none; }
+        .modal input:focus, .modal select:focus { border-color: var(--purple); }
+        
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-btn { flex: 1; padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; font-size: 0.95rem; }
+        .modal-btn.cancel { background: rgba(255,255,255,0.1); color: var(--text-muted); }
+        .modal-btn.confirm { background: var(--purple); color: white; }
+        .modal-btn.confirm:hover { background: #6d28d9; }
+        .modal-btn.confirm.danger { background: var(--red); }
+        .modal-btn.confirm.danger:hover { background: #b91c1c; }
+        .modal-btn.confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .copy-link-box { display: flex; gap: 8px; margin-top: 4px; }
+        .copy-link-box input { flex: 1; }
+        .btn-copy { padding: 12px; background: rgba(255,255,255,0.1); border: none; color: var(--text-main); border-radius: 8px; cursor: pointer; }
+        .btn-copy:hover { background: rgba(255,255,255,0.2); }
+
+        /* 📱 RESPONSIVO */
+        @media (max-width: 768px) {
+            .mobile-toggle { display: flex; }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 70px 16px 24px; }
+            .page-header h1 { font-size: 1.4rem; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .card-header { flex-direction: column; align-items: stretch; }
+            .search-box { max-width: 100%; margin-top: 8px; }
+            
+            table { display: block; }
+            thead { display: none; }
+            tbody { display: block; }
+            tr { display: block; margin-bottom: 12px; background: rgba(255,255,255,0.02); border-radius: 12px; padding: 14px; border: 1px solid var(--border); }
+            td { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed rgba(255,255,255,0.05); }
+            td:last-child { border-bottom: none; padding-top: 12px; justify-content: flex-end; }
+            td::before { content: attr(data-label); font-weight: 600; color: var(--text-muted); font-size: 0.8rem; margin-right: 12px; }
+            .modal-overlay { align-items: flex-end; padding: 0; }
+            .modal { border-bottom-left-radius: 0; border-bottom-right-radius: 0; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Carregando vendedores...</div>
+    </div>
+    <div id="toast-container"></div>
+    <button class="mobile-toggle" id="mobileToggle"><i class="fas fa-bars"></i></button>
+    <div class="overlay" id="overlay"></div>
+
+    <div class="admin-layout" id="adminLayout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-gem"></i>
+                <h2>MuciGems</h2>
+                <div class="admin-badge"><i class="fas fa-shield-halved"></i> Painel Admin</div>
+            </div>
+            <nav class="nav-links">
+                <a href="admin.html" class="nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="usuarios.html" class="nav-link"><i class="fas fa-users"></i> Usuários</a>
+                <a href="vendedores.html" class="nav-link active"><i class="fas fa-store"></i> Vendedores</a>
+                <a href="produtos.html" class="nav-link"><i class="fas fa-box-open"></i> Produtos</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a class="logout-btn" href="login.html"><i class="fas fa-sign-out-alt"></i> Sair do painel</a>
+            </div>
+        </aside>
+        <main class="main-content">
+            <div class="page-header">
+                <h1><i class="fas fa-store" style="color: var(--purple);"></i> Vendedores</h1>
+                <p>Gerencie a equipe de vendas e comissões</p>
+            </div>
+            
+            <div class="stats-row">
+                <div class="stat-mini"><div class="label">Total</div><div class="value" id="statTotal">0</div></div>
+                <div class="stat-mini"><div class="label">Ativos</div><div class="value" id="statActive" style="color: var(--success);">0</div></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Lista de Vendedores</h3>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; width: 100%;">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="Buscar por nome ou e-mail...">
+                        </div>
+                        <button class="btn-add" onclick="openAddModal()"><i class="fas fa-plus"></i> Novo Vendedor</button>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>E-mail</th>                                <th>Comissão</th>
+                                <th>Vendas (Mês)</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sellersTableBody">
+                            <tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);"><i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i> Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Adicionar/Editar -->
+    <div class="modal-overlay" id="sellerModal">
+        <div class="modal">
+            <h3 id="modalTitle"><i class="fas fa-user-plus" style="color: var(--purple);"></i> Novo Vendedor</h3>
+            <input type="hidden" id="sellerId">
+            
+            <div class="form-group">
+                <label>Nome Completo</label>
+                <input type="text" id="sellerName" placeholder="Ex: João Silva">
+            </div>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="sellerEmail" placeholder="Ex: joao@email.com">
+            </div>
+            <div class="form-group">
+                <label>Comissão (%)</label>
+                <input type="number" id="sellerCommission" placeholder="Ex: 10" min="0" max="100">
+            </div>
+            <div class="form-group">
+                <label>Vendas no Mês (R$)</label>
+                <input type="number" id="sellerSales" placeholder="0.00" step="0.01" min="0">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="sellerStatus">
+                    <option value="Ativo">Ativo</option>
+                    <option value="Inativo">Inativo</option>
+                </select>
+            </div>
+
+            <!-- Campo de Link de Afiliado (Só aparece na edição) -->
+            <div class="form-group" id="linkGroup" style="display:none;">
+                <label>Link de Afiliado</label>
+                <div class="copy-link-box">
+                    <input type="text" id="affiliateLink" readonly onclick="this.select()">                    <button class="btn-copy" onclick="copyLink()"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeSellerModal()">Cancelar</button>
+                <button class="modal-btn confirm" id="saveSellerBtn">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação (Banir/Desbanir) -->
+    <div class="modal-overlay" id="statusModal">
+        <div class="modal">
+            <h3 id="statusModalTitle"><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Alterar Status</h3>
+            <p id="statusModalMessage">Tem certeza que deseja realizar esta ação?</p>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeStatusModal()">Cancelar</button>
+                <button class="modal-btn confirm" id="confirmStatusBtn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, get, set, update, remove, onValue } from "./firebase-firestore-compat.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
+            authDomain: "renda-cash-f3c91-default-rtdb.firebaseio.com",
+            databaseURL: "https://renda-cash-f3c91-default-rtdb.firebaseio.com",
+            projectId: "renda-cash-f3c91",            storageBucket: "renda-cash-f3c91.firebasestorage.app",
+            messagingSenderId: "600925903090",
+            appId: "1:346807213810:android:b05ec1bcab93f9bf747a6b",
+            measurementId: "G-BT9FB5CTNM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let allSellers = [];
+
+        // --- TOAST ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle' };
+            toast.innerHTML = `<i class="fas ${icons[type]}"></i><p>${message}</p>`;            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3500);
+        }
+
+        // --- INICIALIZAÇÃO ---
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                document.getElementById('loadingScreen').classList.add('hidden');
+                document.getElementById('adminLayout').classList.add('visible');
+                loadSellers();
+            }, 800);
+
+            // Mobile Sidebar
+            document.getElementById('mobileToggle').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('open');
+                document.getElementById('overlay').classList.toggle('open');
+            });
+            document.getElementById('overlay').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('overlay').classList.remove('open');
+            });
+
+            // Busca
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase().trim();
+                renderTable(term ? allSellers.filter(s => 
+                    (s.nome && s.nome.toLowerCase().includes(term)) ||
+                    (s.email && s.email.toLowerCase().includes(term))
+                ) : allSellers);
+            });
+
+            // Salvar Vendedor
+            document.getElementById('saveSellerBtn').addEventListener('click', saveSeller);
+        });
+
+        // --- CARREGAR DADOS (EM TEMPO REAL) ---
+        function loadSellers() {
+            const sellersRef = ref(db, 'Vendedores');
+            onValue(sellersRef, (snapshot) => {
+                allSellers = [];
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        allSellers.push({ id: child.key, ...child.val() });
+                    });
+                }
+                updateStats();                renderTable(allSellers);
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = allSellers.length;
+            document.getElementById('statActive').textContent = allSellers.filter(s => s.status === 'Ativo').length;
+        }
+
+        function renderTable(sellers) {
+            const tbody = document.getElementById('sellersTableBody');
+            if (sellers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 30px; color: var(--text-muted);">Nenhum vendedor encontrado</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = sellers.map(s => {
+                const isBanned = s.status === 'Inativo';
+                return `
+                <tr data-id="${s.id}">
+                    <td data-label="Nome"><div class="user-name">${s.nome || '-'}</div></td>
+                    <td data-label="E-mail"><span class="user-email">${s.email || '-'}</span></td>
+                    <td data-label="Comissão" style="color: var(--purple); font-weight: 600;">${s.comissao ? s.comissao + '%' : '0%'}</td>
+                    <td data-label="Vendas (Mês)" style="font-weight: 600; color: var(--success);">R$ ${s.vendasMes ? parseFloat(s.vendasMes).toFixed(2) : '0.00'}</td>
+                    <td data-label="Status">
+                        ${isBanned ? '<span class="badge badge-inactive">Inativo</span>' : '<span class="badge badge-active">Ativo</span>'}
+                    </td>
+                    <td data-label="Ações">
+                        <div class="actions" style="justify-content: flex-end;">
+                            <button class="action-btn" onclick="openEditModal('${s.id}')" title="Editar"><i class="fas fa-pen"></i></button>
+                            <button class="action-btn ${isBanned ? 'success' : 'warning'}" onclick="openStatusModal('${s.id}', ${isBanned})" title="${isBanned ? 'Ativar' : 'Banir'}"><i class="fas ${isBanned ? 'fa-check' : 'fa-ban'}"></i></button>
+                            <button class="action-btn danger" onclick="deleteSeller('${s.id}')" title="Excluir"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        // --- MODAL DE VENDEDOR ---
+        window.openAddModal = () => {
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-plus" style="color: var(--purple);"></i> Novo Vendedor';
+            document.getElementById('sellerId').value = '';
+            document.getElementById('sellerName').value = '';
+            document.getElementById('sellerEmail').value = '';
+            document.getElementById('sellerCommission').value = '';
+            document.getElementById('sellerSales').value = '';
+            document.getElementById('sellerStatus').value = 'Ativo';
+            document.getElementById('linkGroup').style.display = 'none';
+            document.getElementById('sellerModal').classList.add('active');
+        };
+        window.openEditModal = (id) => {
+            const seller = allSellers.find(s => s.id === id);
+            if (!seller) return;
+            
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-edit" style="color: var(--purple);"></i> Editar Vendedor';
+            document.getElementById('sellerId').value = seller.id;
+            document.getElementById('sellerName').value = seller.nome || '';
+            document.getElementById('sellerEmail').value = seller.email || '';
+            document.getElementById('sellerCommission').value = seller.comissao || '';
+            document.getElementById('sellerSales').value = seller.vendasMes || '';
+            document.getElementById('sellerStatus').value = seller.status || 'Ativo';
+            
+            // Configurar Link de Afiliado
+            const linkInput = document.getElementById('affiliateLink');
+            // Gera o link baseado no domínio atual + ID do vendedor
+            const baseUrl = window.location.origin + window.location.pathname.replace('vendedores.html', 'home.html');
+            linkInput.value = `${baseUrl}?ref=${seller.id}`;
+            document.getElementById('linkGroup').style.display = 'block';
+
+            document.getElementById('sellerModal').classList.add('active');
+        };
+
+        window.closeSellerModal = () => {
+            document.getElementById('sellerModal').classList.remove('active');
+        };
+
+        window.copyLink = () => {
+            const input = document.getElementById('affiliateLink');
+            input.select();
+            document.execCommand('copy');
+            showToast('Link copiado para a área de transferência!', 'success');
+        };
+
+        // --- SALVAR VENDEDOR ---
+        async function saveSeller() {
+            const id = document.getElementById('sellerId').value;
+            const nome = document.getElementById('sellerName').value.trim();
+            const email = document.getElementById('sellerEmail').value.trim();
+            const comissao = document.getElementById('sellerCommission').value;
+            const vendasMes = document.getElementById('sellerSales').value;
+            const status = document.getElementById('sellerStatus').value;
+
+            if (!nome || !email) {
+                showToast('Preencha nome e e-mail.', 'error');
+                return;
+            }
+            const data = { nome, email, comissao: parseFloat(comissao) || 0, vendasMes: parseFloat(vendasMes) || 0, status };
+            const btn = document.getElementById('saveSellerBtn');
+            btn.disabled = true; btn.textContent = 'Salvando...';
+            try {
+                if (id) {
+                    await update(ref(db, `Vendedores/${id}`), data);
+                    showToast('Vendedor atualizado!');
+                } else {
+                    const newRef = ref(db, `Vendedores/${Date.now()}`);
+                    await set(newRef, data);
+                    showToast('Vendedor criado!');
+                }
+                closeSellerModal();
+            } catch (err) {
+                showToast('Erro ao salvar.', 'error');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Salvar';
+            }
+        }
+
+        // --- MODAL DE STATUS (BANIR/DESBAIR) ---
+        let pendingSellerId = null;
+        let pendingAction = null; // true = banir, false = desbanir
+
+        window.openStatusModal = (id, isBanned) => {
+            pendingSellerId = id;
+            pendingAction = isBanned; // Se está inativo (true), vamos ativar. Se ativo (false), vamos banir.
+            
+            const modal = document.getElementById('statusModal');
+            const title = document.getElementById('statusModalTitle');
+            const msg = document.getElementById('statusModalMessage');
+            const btn = document.getElementById('confirmStatusBtn');
+
+            if (isBanned) {
+                title.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success);"></i> Ativar Vendedor';
+                msg.textContent = 'Deseja reativar este vendedor? Ele voltará a receber comissões.';
+                btn.className = 'modal-btn confirm';
+                btn.textContent = 'Ativar';
+            } else {
+                title.innerHTML = '<i class="fas fa-ban" style="color: var(--red);"></i> Banir Vendedor';
+                msg.textContent = 'Deseja banir este vendedor? Ele não receberá mais comissões.';
+                btn.className = 'modal-btn confirm danger';
+                btn.textContent = 'Banir';
+            }
+            modal.classList.add('active');
+        };
+
+        window.closeStatusModal = () => {
+            document.getElementById('statusModal').classList.remove('active');
+            pendingSellerId = null;
+        };
+
+        document.getElementById('confirmStatusBtn').addEventListener('click', async () => {            if (!pendingSellerId) return;
+            const newStatus = pendingAction ? 'Ativo' : 'Inativo'; // Se pendingAction é true (estava inativo), vira Ativo.
+            
+            const btn = document.getElementById('confirmStatusBtn');
+            btn.disabled = true; btn.textContent = '...';
+
+            try {
+                await update(ref(db, `Vendedores/${pendingSellerId}`), { status: newStatus });
+                showToast(newStatus === 'Ativo' ? 'Vendedor ativado!' : 'Vendedor banido!', newStatus === 'Ativo' ? 'success' : 'error');
+                closeStatusModal();
+            } catch (err) {
+                showToast('Erro ao atualizar status.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = pendingAction ? 'Ativar' : 'Banir';
+            }
+        });
+
+        // --- EXCLUIR ---
+        window.deleteSeller = async (id) => {
+            if (!confirm('Tem certeza que deseja excluir este vendedor?')) return;
+            try {
+                await remove(ref(db, `Vendedores/${id}`));
+                showToast('Vendedor excluído.', 'error');
+            } catch (err) {
+                showToast('Erro ao excluir.', 'error');
+            }
+        };
+    </script>
+</body>
+</html>

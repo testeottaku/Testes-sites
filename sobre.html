@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobre Nós | MuciGems</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg-dark: #0b0f19; --card-bg: rgba(15, 20, 35, 0.88); --navy: #1e3a8a; --purple: #7c3aed; --red: #dc2626; --text-main: #f8fafc; --text-muted: #94a3b8; --border: rgba(255, 255, 255, 0.08); }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+        body { background: radial-gradient(1200px 600px at 10% 10%, rgba(30, 58, 138, 0.15), transparent), radial-gradient(1000px 500px at 90% 90%, rgba(124, 58, 237, 0.12), transparent), var(--bg-dark); color: var(--text-main); min-height: 100vh; padding-bottom: 40px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(10px); }
+        .menu-btn { background: none; border: none; color: var(--text-main); font-size: 1.3rem; cursor: pointer; }
+        .logo { font-weight: 800; font-size: 1.3rem; background: linear-gradient(135deg, var(--navy), var(--purple)); -webkit-background-clip: text; color: transparent; }
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; opacity: 0; visibility: hidden; transition: 0.3s; }
+        .drawer-overlay.open { opacity: 1; visibility: visible; }
+        .drawer { position: fixed; top: 0; left: 0; width: 280px; height: 100vh; background: var(--card-bg); border-right: 1px solid var(--border); z-index: 100; transform: translateX(-100%); transition: 0.3s ease; display: flex; flex-direction: column; }
+        .drawer.open { transform: translateX(0); }
+        .drawer-header { padding: 24px; border-bottom: 1px solid var(--border); text-align: center; }
+        .drawer-header i { font-size: 2rem; color: var(--purple); margin-bottom: 8px; }
+        .drawer-header h2 { font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
+        .drawer-links { flex: 1; padding: 16px; }
+        .drawer-link { display: flex; align-items: center; gap: 12px; padding: 14px 16px; color: var(--text-muted); text-decoration: none; font-weight: 500; border-radius: 10px; margin-bottom: 4px; transition: 0.2s; }
+        .drawer-link:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
+        .drawer-link i { width: 20px; text-align: center; }
+        .drawer-footer { padding: 20px; border-top: 1px solid var(--border); }
+        .logout-btn { display: flex; align-items: center; gap: 10px; color: var(--red); text-decoration: none; font-weight: 600; }
+        .container { max-width: 800px; margin: 0 auto; padding: 24px 20px; }
+        .page-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 24px; }
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 24px; backdrop-filter: blur(12px); margin-bottom: 20px; }
+        .about-text { color: var(--text-muted); line-height: 1.7; margin-bottom: 16px; }
+        .values-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px; }
+        .value-item { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 20px; text-align: center; }
+        .value-item i { font-size: 1.8rem; color: var(--purple); margin-bottom: 12px; }
+        .value-item h4 { font-size: 1rem; margin-bottom: 6px; }
+        .value-item p { font-size: 0.85rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
+        <div class="logo">MuciGems</div>
+        <div style="width: 24px;"></div>
+    </div>
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+    <aside class="drawer" id="drawer">
+        <div class="drawer-header"><i class="fas fa-gem"></i><h2>MuciGems</h2></div>
+        <nav class="drawer-links">
+            <a href="home.html" class="drawer-link"><i class="fas fa-store"></i> Loja</a>
+            <a href="perfil.html" class="drawer-link"><i class="fas fa-user"></i> Perfil</a>
+            <a href="sobre.html" class="drawer-link" style="color:var(--purple);background:rgba(124,58,237,0.1);"><i class="fas fa-info-circle"></i> Sobre Nós</a>
+            <a href="politica.html" class="drawer-link"><i class="fas fa-shield-halved"></i> Privacidade</a>
+            <a href="termos.html" class="drawer-link"><i class="fas fa-file-contract"></i> Termos</a>
+        </nav>
+        <div class="drawer-footer"><a href="login.html" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Sair</a></div>
+    </aside>
+    <main class="container">
+        <h1 class="page-title">Sobre a MuciGems</h1>
+        <div class="card">
+            <p class="about-text">A MuciGems nasceu da paixão por jogos e da necessidade de oferecer uma alternativa segura, rápida e acessível para aquisição de diamantes no Free Fire. Desde 2024, conectamos jogadores a recargas digitais com total transparência e suporte dedicado.</p>
+            <p class="about-text">Nosso compromisso é garantir que cada compra seja processada com segurança, entrega ágil e atendimento humanizado. Não somos afiliados à Garena, mas atuamos como intermediadores confiáveis no ecossistema de jogos.</p>
+            <div class="values-grid">
+                <div class="value-item">
+                    <i class="fas fa-shield-halved"></i>
+                    <h4>Segurança</h4>
+                    <p>Pagamentos criptografados e dados protegidos.</p>
+                </div>
+                <div class="value-item">
+                    <i class="fas fa-bolt"></i>
+                    <h4>Velocidade</h4>
+                    <p>Entrega automática em até 15 minutos.</p>
+                </div>
+                <div class="value-item">
+                    <i class="fas fa-headset"></i>
+                    <h4>Suporte 24/7</h4>
+                    <p>Equipe pronta para resolver qualquer dúvida.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script>
+        const menuBtn = document.getElementById('menuBtn');
+        const drawer = document.getElementById('drawer');
+        const overlay = document.getElementById('drawerOverlay');
+        function toggleDrawer() { drawer.classList.toggle('open'); overlay.classList.toggle('open'); }
+        menuBtn.addEventListener('click', toggleDrawer);
+        overlay.addEventListener('click', toggleDrawer);
+    </script>
+</body>
+</html>

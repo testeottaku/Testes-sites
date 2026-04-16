@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manutenção | MuciGems</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0b0f19; --card-bg: rgba(15, 20, 35, 0.88); --navy: #1e3a8a; --purple: #7c3aed;
+            --red: #dc2626; --text-main: #f8fafc; --text-muted: #94a3b8; --border: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        body {
+            background: radial-gradient(1200px 600px at 10% 10%, rgba(30, 58, 138, 0.15), transparent),
+                        radial-gradient(1000px 500px at 90% 90%, rgba(124, 58, 237, 0.12), transparent),
+                        var(--bg-dark);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center; color: var(--text-main); padding: 20px;
+        }
+        .container { width: 100%; max-width: 480px; text-align: center; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Cabeçalho Profissional do Site */
+        .logo { font-size: 2.8rem; color: var(--purple); margin-bottom: 6px; }
+        h1.site-title {
+            background: linear-gradient(135deg, var(--navy), var(--purple));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            font-size: 2.2rem; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.5px;
+        }
+        .tagline { color: var(--text-muted); margin-bottom: 28px; font-size: 0.95rem; }
+        
+        .card {
+            background: var(--card-bg); backdrop-filter: blur(14px);
+            border: 1px solid var(--border); border-radius: 20px;
+            padding: 28px 24px; box-shadow: 0 10px 35px rgba(0,0,0,0.5);
+        }
+        
+        .maintenance-icon {
+            width: 70px; height: 70px; background: rgba(245, 158, 11, 0.15);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px; color: #f59e0b; font-size: 1.8rem;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); } 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } }
+        
+        .card h2 { font-size: 1.4rem; margin-bottom: 10px; color: var(--text-main); font-weight: 700; }
+        .message { color: var(--text-muted); font-size: 0.92rem; line-height: 1.6; margin-bottom: 20px; }
+        
+        .footer-card {            margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);
+            color: var(--text-muted); font-size: 0.82rem;
+        }
+        
+        .btn-home {
+            display: inline-flex; align-items: center; gap: 8px;
+            margin-top: 16px; padding: 12px 24px;
+            background: var(--purple); color: white;
+            border-radius: 10px; text-decoration: none; font-weight: 600;
+            transition: 0.2s; border: none; cursor: pointer; width: 100%; justify-content: center;
+        }
+        .btn-home:hover { background: #6d28d9; transform: translateY(-2px); }
+        
+        .loading-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .loading-state i { font-size: 2.5rem; margin-bottom: 16px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container" id="contentContainer">
+        <div class="loading-state">
+            <i class="fas fa-circle-notch"></i>
+            <p>Verificando status do sistema...</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "./firebase-firestore-compat.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
+            authDomain: "renda-cash-f3c91-default-rtdb.firebaseio.com",
+            databaseURL: "https://renda-cash-f3c91-default-rtdb.firebaseio.com",
+            projectId: "renda-cash-f3c91",            storageBucket: "renda-cash-f3c91.firebasestorage.app",
+            messagingSenderId: "600925903090",
+            appId: "1:346807213810:android:b05ec1bcab93f9bf747a6b",
+            measurementId: "G-BT9FB5CTNM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Real-time listener for maintenance status
+        onValue(ref(db, 'Manutencao'), (snapshot) => {
+            const container = document.getElementById('contentContainer');
+            let isMaintenance = false;
+            let msg = "Estamos em manutenção.";
+            let footer = "";
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                isMaintenance = data.ativo === true;
+                if (isMaintenance) {
+                    msg = data.mensagem || "O sistema está indisponível no momento.";
+                    footer = data.footer || "";
+                }
+            }
+
+            // If maintenance is OFF, redirect to home automatically
+            if (!isMaintenance) {
+                container.innerHTML = `
+                    <div class="loading-state">
+                        <i class="fas fa-check-circle" style="color: var(--success); animation: none;"></i>
+                        <p>Sistema operacional! Redirecionando...</p>
+                    </div>
+                `;
+                setTimeout(() => {
+                    window.location.href = 'home.html';
+                }, 1500);
+                return;
+            }
+
+            // If maintenance is ON, show the page with professional header
+            container.innerHTML = `
+                <div class="logo"><i class="fas fa-gem"></i></div>
+                <h1 class="site-title">MuciGems</h1>
+                <p class="tagline">Seu universo de oportunidades</p>
+                
+                <div class="card">
+                    <div class="maintenance-icon">
+                        <i class="fas fa-wrench"></i>
+                    </div>
+                    <h2>Sistema em Manutenção</h2>
+                    <p class="message">${msg}</p>
+                    
+                    <button class="btn-home" onclick="window.location.href='home.html'">
+                        <i class="fas fa-arrow-left"></i> Voltar para a loja
+                    </button>
+
+                    ${footer ? `<div class="footer-card"><p>${footer}</p></div>` : ''}
+                </div>
+            `;
+        }, (error) => {
+            // Error fallback
+            document.getElementById('contentContainer').innerHTML = `
+                <div class="logo"><i class="fas fa-gem"></i></div>
+                <h1 class="site-title">MuciGems</h1>
+                <p class="tagline">Seu universo de oportunidades</p>                <div class="card">
+                    <h2>Erro de Conexão</h2>
+                    <p class="message">Não foi possível verificar o status do sistema. Tente novamente mais tarde.</p>
+                    <button class="btn-home" onclick="window.location.reload()"><i class="fas fa-redo"></i> Tentar novamente</button>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>

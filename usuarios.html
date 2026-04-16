@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Usuários | MuciGems</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0b0f19; --card-bg: rgba(15, 20, 35, 0.88); --navy: #1e3a8a; 
+            --purple: #7c3aed; --red: #dc2626; --text-main: #f8fafc; --text-muted: #94a3b8; 
+            --border: rgba(255, 255, 255, 0.08); --success: #10b981; --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: radial-gradient(1200px 600px at 10% 10%, rgba(30, 58, 138, 0.15), transparent), radial-gradient(1000px 500px at 90% 90%, rgba(124, 58, 237, 0.12), transparent), var(--bg-dark); color: var(--text-main); min-height: 100vh; overflow-x: hidden; padding-bottom: 20px; }
+        
+        .loading-screen { position: fixed; inset: 0; background: var(--bg-dark); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.4s, visibility 0.4s; }
+        .loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .loading-spinner { width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--purple); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--text-muted); font-size: 0.95rem; }
+        .loading-error { color: var(--red); font-size: 0.85rem; margin-top: 12px; text-align: center; max-width: 80%; display: none; }
+
+        .admin-layout { display: flex; min-height: 100vh; opacity: 0; visibility: hidden; transition: opacity 0.4s, visibility 0.4s; }
+        .admin-layout.visible { opacity: 1; visibility: visible; }
+        
+        .sidebar { width: 260px; background: var(--card-bg); border-right: 1px solid var(--border); padding: 24px 0; display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; transition: transform 0.3s; overflow-y: auto; }
+        .sidebar-header { padding: 0 24px 24px; border-bottom: 1px solid var(--border); text-align: center; }
+        .sidebar-header i { font-size: 2rem; color: var(--purple); margin-bottom: 8px; }
+        .sidebar-header h2 { background: linear-gradient(135deg, var(--navy), var(--purple)); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: 1.4rem; font-weight: 800; }
+        .admin-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-top: 8px; }
+        .nav-links { flex: 1; padding: 16px 12px; }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 13px 16px; color: var(--text-muted); text-decoration: none; font-weight: 500; border-radius: 10px; margin-bottom: 4px; transition: 0.2s; }
+        .nav-link:hover { background: rgba(255,255,255,0.05); color: var(--text-main); }
+        .nav-link.active { background: rgba(124, 58, 237, 0.15); color: var(--purple); font-weight: 600; }
+        .nav-link i { width: 20px; text-align: center; }
+        .sidebar-footer { padding: 20px 24px; border-top: 1px solid var(--border); }
+        .logout-btn { display: flex; align-items: center; gap: 10px; color: var(--red); text-decoration: none; font-weight: 600; font-size: 0.9rem; cursor: pointer; padding: 10px; border-radius: 8px; }
+        .logout-btn:hover { background: rgba(255,255,255,0.05); color: #f87171; }
+
+        .main-content { margin-left: 260px; flex: 1; padding: 32px; transition: margin 0.3s; max-width: 100%; }
+        .page-header { margin-bottom: 24px; }
+        .page-header h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .page-header p { color: var(--text-muted); font-size: 0.9rem; }
+
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-mini { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+        .stat-mini .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+        .stat-mini .value { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; backdrop-filter: blur(12px); margin-bottom: 20px; }
+        .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .card-header h3 { font-size: 1rem; font-weight: 700; }
+        
+        .search-box { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 0 12px; transition: 0.2s; flex: 1; max-width: 250px; }
+        .search-box:focus-within { border-color: var(--purple); }
+        .search-box i { color: var(--text-muted); margin-right: 8px; }
+        .search-box input { background: transparent; border: none; color: var(--text-main); padding: 10px 0; outline: none; font-size: 0.9rem; width: 100%; }
+        .search-box input::placeholder { color: var(--text-muted); }
+
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+        th { color: var(--text-muted); font-weight: 600; background: rgba(255,255,255,0.02); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 2; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+        
+        .user-name { font-weight: 600; color: var(--text-main); font-size: 0.95rem; }
+        .user-uid { font-family: monospace; font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; }
+        .user-email { color: var(--text-muted); font-size: 0.9rem; }
+
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 600; display: inline-block; text-transform: uppercase; }
+        .badge-active { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .badge-banned { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+        .actions { display: flex; gap: 6px; flex-wrap: nowrap; }
+        .action-btn { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--text-muted); cursor: pointer; transition: 0.2s; border: none; font-size: 0.9rem; }
+        .action-btn:active { transform: scale(0.95); }
+        .action-btn:hover { background: rgba(124, 58, 237, 0.2); color: var(--purple); }
+        .action-btn.danger:hover { background: rgba(220, 38, 38, 0.2); color: var(--red); }
+        .action-btn.success:hover { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .action-btn.warning:hover { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+
+        .mobile-toggle { display: none; position: fixed; top: 16px; left: 16px; z-index: 200; width: 42px; height: 42px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; align-items: center; justify-content: center; color: var(--text-main); cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 90; backdrop-filter: blur(2px); }
+        .overlay.open { display: block; }
+
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { background: var(--card-bg); border: 1px solid var(--border); color: white; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateX(120%); opacity: 0; transition: 0.4s; pointer-events: auto; max-width: 300px; }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--red); }
+        .toast i { font-size: 1rem; flex-shrink: 0; }
+        .toast.success i { color: var(--success); }
+        .toast.error i { color: var(--red); }
+        .toast p { font-size: 0.85rem; margin: 0; line-height: 1.3; }
+
+        /* MODAIS ESTILIZADOS */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+        .modal-overlay.active { display: flex; }        .modal { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 400px; width: 100%; animation: modalIn 0.3s ease; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        
+        .modal h3 { font-size: 1.1rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
+        .modal p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; line-height: 1.5; }
+        
+        .modal input { width: 100%; padding: 14px; background: rgba(30, 35, 55, 0.7); border: 1px solid var(--border); border-radius: 10px; color: white; font-size: 1rem; outline: none; margin-bottom: 16px; }
+        .modal input:focus { border-color: var(--purple); }
+        
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; padding: 12px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; font-size: 0.95rem; }
+        .modal-btn.cancel { background: rgba(255,255,255,0.1); color: var(--text-muted); }
+        .modal-btn.cancel:hover { background: rgba(255,255,255,0.2); }
+        .modal-btn.confirm { background: var(--purple); color: white; }
+        .modal-btn.confirm:hover { background: #6d28d9; }
+        .modal-btn.confirm.danger { background: var(--red); }
+        .modal-btn.confirm.danger:hover { background: #b91c1c; }
+        .modal-btn.confirm:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* 📱 OTIMIZAÇÃO PARA CELULAR (APP STYLE) */
+        @media (max-width: 768px) {
+            .mobile-toggle { display: flex; }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            
+            .main-content { margin-left: 0; padding: 70px 16px 24px; }
+            .page-header h1 { font-size: 1.4rem; }
+            .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .stat-mini { padding: 12px 4px; }
+            .stat-mini .value { font-size: 1.2rem; }
+            .stat-mini .label { font-size: 0.6rem; }
+            
+            .card { border-radius: 12px; }
+            .card-header { padding: 14px 16px; }
+            .search-box { max-width: 100%; margin-top: 4px; }
+            
+            /* Tabela Transformada em Cards */
+            table { display: block; }
+            thead { display: none; }
+            tbody { display: block; }
+            tr { 
+                display: block; 
+                margin-bottom: 12px; 
+                background: rgba(255,255,255,0.02); 
+                border-radius: 12px; 
+                padding: 14px; 
+                border: 1px solid var(--border); 
+            }
+            td { 
+                display: flex;                 justify-content: space-between; 
+                align-items: center; 
+                padding: 8px 0; 
+                border-bottom: 1px dashed rgba(255,255,255,0.05); 
+                font-size: 0.9rem;
+            }
+            td:last-child { border-bottom: none; padding-top: 14px; justify-content: flex-end; }
+            
+            /* Labels para Mobile */
+            td::before { 
+                content: attr(data-label); 
+                font-weight: 600; 
+                color: var(--text-muted); 
+                font-size: 0.8rem; 
+                margin-right: 12px; 
+            }
+            .user-uid { font-size: 0.75rem; }
+            .actions { justify-content: flex-end; width: 100%; }
+
+            /* Modal Mobile: Slide Up */
+            .modal-overlay { align-items: flex-end; padding: 0; }
+            .modal { border-bottom-left-radius: 0; border-bottom-right-radius: 0; max-width: 100%; animation: slideUp 0.3s ease; }
+            @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Verificando acesso...</div>
+        <div class="loading-error" id="loadingError"></div>
+    </div>
+
+    <div id="toast-container"></div>
+    <button class="mobile-toggle" id="mobileToggle"><i class="fas fa-bars"></i></button>
+    <div class="overlay" id="overlay"></div>
+
+    <div class="admin-layout" id="adminLayout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-gem"></i>
+                <h2>MuciGems</h2>
+                <div class="admin-badge"><i class="fas fa-shield-halved"></i> Painel Admin</div>
+            </div>
+            <nav class="nav-links">
+                <a href="admin.html" class="nav-link"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="usuarios.html" class="nav-link active"><i class="fas fa-users"></i> Usuários</a>
+                <a href="vendedores.html" class="nav-link"><i class="fas fa-store"></i> Vendedores</a>
+                <a href="produtos.html" class="nav-link"><i class="fas fa-box-open"></i> Produtos</a>
+            </nav>            <div class="sidebar-footer">
+                <a class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sair do painel</a>
+            </div>
+        </aside>
+        <main class="main-content">
+            <div class="page-header">
+                <h1><i class="fas fa-users" style="color: var(--purple);"></i>Gerenciar Usuários</h1>
+                <p>Controle total sobre contas, saldos e permissões</p>
+            </div>
+            
+            <div class="stats-row">
+                <div class="stat-mini"><div class="label">Total</div><div class="value" id="statTotal">0</div></div>
+                <div class="stat-mini"><div class="label">Ativos</div><div class="value" id="statActive" style="color: var(--success);">0</div></div>
+                <div class="stat-mini"><div class="label">Banidos</div><div class="value" id="statBanned" style="color: var(--red);">0</div></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Lista de Usuários</h3>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Buscar por nome, e-mail ou UID...">
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>E-mail</th>
+                                <th>UID</th>
+                                <th>Saldo</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);"><i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i> Carregando usuários...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal de Adicionar Saldo -->
+    <div class="modal-overlay" id="balanceModal">
+        <div class="modal">
+            <h3><i class="fas fa-wallet" style="color: var(--success);"></i> Adicionar Saldo</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 12px;">Usuário: <strong id="modalUserName"></strong></p>            <input type="number" id="balanceInput" placeholder="Valor em R$ (ex: 50.00)" step="0.01" min="0">
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="window.closeBalanceModal()">Cancelar</button>
+                <button class="modal-btn confirm" id="confirmBalanceBtn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Genérico de Confirmação (Banir/Excluir) -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <h3 id="confirmModalTitle"><i class="fas fa-exclamation-triangle" style="color: var(--warning);"></i> Confirmação</h3>
+            <p id="confirmModalMessage">Tem certeza que deseja realizar esta ação?</p>
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="window.closeConfirmModal()">Cancelar</button>
+                <button class="modal-btn confirm" id="confirmModalBtn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getDatabase, ref, get, update, remove } from "./firebase-firestore-compat.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
+            authDomain: "renda-cash-f3c91-default-rtdb.firebaseio.com",
+            databaseURL: "https://renda-cash-f3c91-default-rtdb.firebaseio.com",
+            projectId: "renda-cash-f3c91",            storageBucket: "renda-cash-f3c91.firebasestorage.app",
+            messagingSenderId: "600925903090",
+            appId: "1:346807213810:android:b05ec1bcab93f9bf747a6b",
+            measurementId: "G-BT9FB5CTNM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let allUsers = [];
+        let currentUser = null;
+        let accessResolved = false;
+        let pendingAction = null; // Para guardar a ação do modal de confirmação
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icons = { success: 'fa-check-circle', error: 'fa-times-circle' };            toast.innerHTML = `<i class="fas ${icons[type] || icons.success}"></i><p>${message}</p>`;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3500);
+        }
+
+        function finalizeAccess(showLayout = true) {
+            if (accessResolved) return;
+            accessResolved = true;
+            document.getElementById('loadingScreen').classList.add('hidden');
+            if (showLayout) {
+                const layout = document.getElementById('adminLayout');
+                layout.style.display = 'flex';
+                requestAnimationFrame(() => layout.classList.add('visible'));
+            }
+        }
+        function showLoadingError(msg) {
+            const errEl = document.getElementById('loadingError');
+            if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (accessResolved) return;
+            if (!user) {
+                showLoadingError('Sessão expirada.');
+                setTimeout(() => window.location.replace('login.html'), 1500);
+                return;
+            }
+            currentUser = user;
+            try {
+                const adminRef = ref(db, `admins/${user.uid}`);
+                const adminSnap = await Promise.race([get(adminRef), new Promise((_, reject) => setTimeout(() => reject('timeout'), 5000))]);
+                if (adminSnap.exists() && adminSnap.val() === true) {
+                    finalizeAccess(true);
+                    loadUsers();
+                    setupEventListeners();
+                } else {
+                    showLoadingError('Acesso negado.');
+                    setTimeout(() => window.location.replace('login.html'), 1500);
+                }
+            } catch (err) {
+                showLoadingError('Erro de conexão.');
+                setTimeout(() => window.location.replace('login.html'), 2000);
+                finalizeAccess(false);
+            }
+        });
+        async function loadUsers() {
+    try {
+        const snapshot = await get(ref(db, 'Usuarios'));
+        allUsers = [];
+
+        console.log("snapshot.exists():", snapshot.exists());
+        console.log("snapshot.val():", snapshot.val());
+
+        if (snapshot.exists()) {
+            snapshot.forEach(child => {
+                console.log("Usuário encontrado:", child.key, child.val());
+                allUsers.push({ id: child.key, ...child.val() });
+            });
+        }
+
+        updateStats();
+        renderTable(allUsers);
+    } catch (err) {
+        console.error("Erro ao carregar usuários:", err);
+        showToast('Erro ao carregar dados.', 'error');
+    }
+}
+
+        function updateStats() {
+            document.getElementById('statTotal').textContent = allUsers.length;
+            document.getElementById('statActive').textContent = allUsers.filter(u => u.status !== 'banned').length;
+            document.getElementById('statBanned').textContent = allUsers.filter(u => u.status === 'banned').length;
+        }
+
+        function renderTable(users) {
+            const tbody = document.getElementById('usersTableBody');
+            if (users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 30px; color: var(--text-muted);">Nenhum usuário encontrado</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = users.map(u => {
+                const isBanned = u.status === 'banned';
+                const balance = u.balance ? parseFloat(u.balance).toFixed(2) : '0.00';
+                // Removido a data conforme solicitado
+                return `
+                    <tr data-uid="${u.id}">
+                        <td data-label="Usuário">
+                            <div class="user-name">${u.username || 'Sem nome'}</div>
+                        </td>
+                        <td data-label="E-mail"><span class="user-email">${u.email || '-'}</span></td>
+                        <td data-label="UID"><span class="user-uid">${u.id.substring(0, 8)}...</span></td>
+                        <td data-label="Saldo" style="font-weight: 600; color: var(--success);">R$ ${balance}</td>
+                        <td data-label="Status">
+                            ${isBanned ? '<span class="badge badge-banned">Banido</span>' : '<span class="badge badge-active">Ativo</span>'}
+                        </td>
+                        <td data-label="Ações">
+                            <div class="actions">
+                                <button class="action-btn success" onclick="window.openBalanceModal('${u.id}', '${u.username || 'Usuário'}')"><i class="fas fa-wallet"></i></button>
+                                <button class="action-btn ${isBanned ? 'warning' : 'danger'}" onclick="window.toggleBan('${u.id}', ${isBanned})"><i class="fas ${isBanned ? 'fa-lock-open' : 'fa-ban'}"></i></button>
+                                <button class="action-btn danger" onclick="window.deleteUser('${u.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;            }).join('');
+        }
+
+        function setupEventListeners() {
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase().trim();
+                renderTable(term ? allUsers.filter(u => 
+                    (u.username && u.username.toLowerCase().includes(term)) ||
+                    (u.email && u.email.toLowerCase().includes(term)) ||
+                    u.id.toLowerCase().includes(term)
+                ) : allUsers);
+            });
+            document.getElementById('mobileToggle').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('open');
+                document.getElementById('overlay').classList.toggle('open');
+            });
+            document.getElementById('overlay').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('overlay').classList.remove('open');
+            });
+            document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth).then(() => window.location.replace('login.html')));
+            document.getElementById('confirmBalanceBtn').addEventListener('click', confirmAddBalance);
+            
+            // Fechar modais com ESC
+            document.addEventListener('keydown', (e) => { 
+                if (e.key === 'Escape') {
+                    window.closeBalanceModal();
+                    window.closeConfirmModal();
+                }
+            });
+        }
+
+        // --- MODAL DE SALDO ---
+        let currentEditUid = null;
+        window.openBalanceModal = (uid, name) => {
+            currentEditUid = uid;
+            document.getElementById('modalUserName').textContent = name;
+            document.getElementById('balanceInput').value = '';
+            document.getElementById('balanceModal').classList.add('active');
+            setTimeout(() => document.getElementById('balanceInput').focus(), 300);
+        };
+        window.closeBalanceModal = () => {
+            document.getElementById('balanceModal').classList.remove('active');
+            currentEditUid = null;
+        };
+
+        async function confirmAddBalance() {
+            if (!currentEditUid) return;
+            const input = document.getElementById('balanceInput');
+            const valor = parseFloat(input.value);            if (isNaN(valor) || valor <= 0) { showToast('Valor inválido.', 'error'); return; }
+            const btn = document.getElementById('confirmBalanceBtn');
+            btn.disabled = true; btn.textContent = 'Processando...';
+            try {
+                const userRef = ref(db, `Usuarios/${currentEditUid}`);
+                const snap = await get(userRef);
+                let currentBalance = snap.exists() ? (parseFloat(snap.val().balance) || 0) : 0;
+                await update(userRef, { balance: currentBalance + valor });
+                showToast(`Saldo: R$ ${(currentBalance + valor).toFixed(2)}`, 'success');
+                window.closeBalanceModal(); loadUsers();
+            } catch (err) { showToast('Erro ao adicionar.', 'error'); } 
+            finally { btn.disabled = false; btn.textContent = 'Confirmar'; }
+        }
+
+        // --- MODAL DE CONFIRMAÇÃO GENÉRICO ---
+        window.showConfirmModal = (title, message, actionCallback, isDanger = false) => {
+            const modal = document.getElementById('confirmModal');
+            const titleEl = document.getElementById('confirmModalTitle');
+            const msgEl = document.getElementById('confirmModalMessage');
+            const btn = document.getElementById('confirmModalBtn');
+
+            titleEl.innerHTML = isDanger 
+                ? `<i class="fas fa-exclamation-triangle" style="color: var(--red);"></i> ${title}`
+                : `<i class="fas fa-shield-halved" style="color: var(--warning);"></i> ${title}`;
+            
+            msgEl.textContent = message;
+            
+            btn.className = isDanger ? 'modal-btn confirm danger' : 'modal-btn confirm';
+            btn.textContent = isDanger ? 'Excluir' : 'Confirmar';
+            
+            btn.onclick = () => {
+                btn.disabled = true; btn.textContent = '...';
+                actionCallback().finally(() => {
+                    window.closeConfirmModal();
+                    btn.disabled = false;
+                });
+            };
+
+            modal.classList.add('active');
+        };
+
+        window.closeConfirmModal = () => {
+            document.getElementById('confirmModal').classList.remove('active');
+            pendingAction = null;
+        };
+
+        // --- AÇÕES COM MODAL ---
+        window.toggleBan = (uid, isBanned) => {
+            const action = isBanned ? 'desbanir' : 'banir';
+            const title = isBanned ? 'Desbanir Usuário' : 'Banir Usuário';            const msg = `Tem certeza que deseja ${action} este usuário?`;
+            
+            window.showConfirmModal(title, msg, async () => {
+                try {
+                    await update(ref(db, `Usuarios/${uid}`), { status: isBanned ? 'active' : 'banned' });
+                    showToast(`Usuário ${action} com sucesso!`, 'success'); 
+                    loadUsers();
+                } catch (err) { showToast(`Erro ao ${action}.`, 'error'); }
+            }, false);
+        };
+
+        window.deleteUser = (uid) => {
+            window.showConfirmModal('Excluir Usuário', 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.', async () => {
+                try {
+                    await remove(ref(db, `Usuarios/${uid}`));
+                    showToast('Usuário excluído.', 'error'); 
+                    loadUsers();
+                } catch (err) { showToast('Erro ao excluir.', 'error'); }
+            }, true);
+        };
+    </script>
+</body>
+</html>
