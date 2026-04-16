@@ -167,6 +167,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getDatabase, ref, set, get } from "./firebase-firestore-compat.js";
+        import { isAdminUser } from "./admin-security.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
@@ -225,19 +226,19 @@
                     return;
                 }
                 try {
-                    const snap = await Promise.race([get(ref(db, `admins/${user.uid}`)), new Promise((_, reject) => setTimeout(() => reject('Timeout'), 3000))]);
-                    if (snap.exists() && snap.val() === true) {
+                    const isAdmin = await isAdminUser(db, user, 3000);
+                    if (isAdmin) {
                         finalizeAccess(true);
                         loadVersionData();
                     } else {
-                        setTimeout(() => window.location.replace('login.html'), 1500);
+                        setTimeout(() => window.location.replace('home.html'), 1500);
                     }
                 } catch {
-                    setTimeout(() => finalizeAccess(true), 1000);
+                    setTimeout(() => window.location.replace('login.html'), 1500);
                 }
             });
         } catch {
-            setTimeout(() => finalizeAccess(true), 1000);
+            setTimeout(() => window.location.replace('login.html'), 1000);
         }
 
         // --- AUTO STATUS BASED ON VERSION ---

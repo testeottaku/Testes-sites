@@ -184,6 +184,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getDatabase, ref, onValue, update } from "./firebase-firestore-compat.js";
+        import { isAdminUser } from "./admin-security.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
@@ -240,10 +241,15 @@
                 return;
             }
             try {
-                // Simples verificação (em produção, use claims ou node admins)
+                const isAdmin = await isAdminUser(db, user, 5000);
+                if (!isAdmin) {
+                    setTimeout(() => window.location.replace('home.html'), 1500);
+                    return;
+                }
                 finalizeAccess(true);
-                loadOrders();            } catch {
-                finalizeAccess(true); // Fallback para desenvolvimento
+                loadOrders();
+            } catch {
+                setTimeout(() => window.location.replace('login.html'), 1500);
             }
         });
 

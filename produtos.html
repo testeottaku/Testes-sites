@@ -263,7 +263,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getDatabase, ref, get, set, update, remove, onValue } from "./firebase-firestore-compat.js";
+        import { isAdminUser } from "./admin-security.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
@@ -276,6 +278,7 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getDatabase(app);
 
         let allProducts = [];
@@ -296,11 +299,29 @@
 
         // --- INICIALIZAÇÃO ---
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                document.getElementById('loadingScreen').classList.add('hidden');
-                document.getElementById('adminLayout').classList.add('visible');
-                loadProducts();
-            }, 800);
+            onAuthStateChanged(auth, async (user) => {
+                if (!user) {
+                    setTimeout(() => window.location.replace('login.html'), 800);
+                    return;
+                }
+
+                try {
+                    const isAdmin = await isAdminUser(db, user, 5000);
+                    if (!isAdmin) {
+                        setTimeout(() => window.location.replace('home.html'), 800);
+                        return;
+                    }
+
+                    setTimeout(() => {
+                        document.getElementById('loadingScreen').classList.add('hidden');
+                        document.getElementById('adminLayout').classList.add('visible');
+                        loadProducts();
+                    }, 800);
+                } catch (error) {
+                    console.error('Erro ao verificar admin:', error);
+                    setTimeout(() => window.location.replace('login.html'), 800);
+                }
+            });
 
             // Mobile Sidebar
             document.getElementById('mobileToggle').addEventListener('click', () => {

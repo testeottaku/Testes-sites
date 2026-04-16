@@ -189,6 +189,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getDatabase, ref, onValue, update, get } from "./firebase-firestore-compat.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { isAdminUser } from "./admin-security.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
@@ -221,7 +222,18 @@
             if (authReady) return;
             authReady = true;
 
-            if (user) {
+            if (!user) {
+                setTimeout(() => window.location.replace('login.html'), 800);
+                return;
+            }
+
+            try {
+                const isAdmin = await isAdminUser(db, user, 5000);
+                if (!isAdmin) {
+                    setTimeout(() => window.location.replace('home.html'), 800);
+                    return;
+                }
+
                 setTimeout(() => {
                     document.getElementById('loadingScreen').classList.add('hidden');
                     document.getElementById('adminLayout').classList.add('visible');
@@ -229,12 +241,9 @@
                     loadAdminBadge();
                     loadActivityLogs();
                 }, 800);
-            } else {
-                setTimeout(() => {
-                    document.getElementById('loadingScreen').classList.add('hidden');
-                    document.getElementById('adminLayout').classList.add('visible');
-                    loadAllData();
-                }, 800);
+            } catch (error) {
+                console.error('Erro ao verificar admin:', error);
+                setTimeout(() => window.location.replace('login.html'), 800);
             }
         });
 

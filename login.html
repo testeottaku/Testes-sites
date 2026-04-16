@@ -145,6 +145,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getDatabase, ref, set, get, push, onDisconnect } from "./firebase-firestore-compat.js";
+        import { isAdminUser } from "./admin-security.js";
                 const firebaseConfig = {
             apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
             authDomain: "renda-cash-f3c91-default-rtdb.firebaseio.com",
@@ -252,16 +253,12 @@
                     btn.textContent = 'Entrando...'; 
                     btn.disabled = true;
                     try {
-                        await signInWithEmailAndPassword(auth, email, document.getElementById('loginPassword').value);
+                        const userCred = await signInWithEmailAndPassword(auth, email, document.getElementById('loginPassword').value);
                         showToast('Login realizado com sucesso!', 'success');
                         let destino = 'home.html'; 
                         try {
-                            const adminRef = ref(db, `admins/${currentUser.uid}`);
-                            const snapshot = await Promise.race([
-                                get(adminRef),
-                                new Promise((_, reject) => setTimeout(() => reject(new Error('DB Timeout')), 5000))
-                            ]);
-                            if (snapshot.exists() && snapshot.val() === true) destino = 'admin.html';
+                            const isAdmin = await isAdminUser(db, userCred.user, 5000);
+                            if (isAdmin) destino = 'admin.html';
                         } catch (dbErr) { console.warn('Falha ao verificar permissões.', dbErr); }
                         setTimeout(() => window.location.href = destino, 1000);
                     } catch (err) {

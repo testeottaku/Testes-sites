@@ -177,6 +177,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getDatabase, ref, set, get, onValue } from "./firebase-firestore-compat.js";
+        import { isAdminUser } from "./admin-security.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
@@ -290,11 +291,24 @@
 
         // Auth Check
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                setTimeout(() => {                    document.getElementById('loadingScreen').classList.add('hidden');
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const isAdmin = await isAdminUser(db, user, 5000);
+                if (!isAdmin) {
+                    window.location.href = 'home.html';
+                    return;
+                }
+
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').classList.add('hidden');
                     document.getElementById('adminLayout').classList.add('visible');
                 }, 500);
-            } else {
+            } catch (error) {
+                console.error('Erro ao verificar admin:', error);
                 window.location.href = 'login.html';
             }
         });

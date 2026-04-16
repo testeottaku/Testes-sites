@@ -133,6 +133,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getDatabase, ref, push, set, get } from "./firebase-firestore-compat.js";
+        import { isAdminUser } from "./admin-security.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBZVYZGG5lcFlqH2jS1qqOWmw8cj83jezQ",
@@ -209,14 +210,9 @@
                 console.log('Usuário autenticado:', user.uid);
                 
                 try {
-                    // Verifica se é admin com timeout
-                    const adminRef = ref(db, `admins/${user.uid}`);
-                    const adminSnap = await Promise.race([
-                        get(adminRef),
-                        new Promise((_, reject) => setTimeout(() => reject('Timeout'), 3000))
-                    ]);
+                    const isAdmin = await isAdminUser(db, user, 3000);
 
-                    if (adminSnap.exists() && adminSnap.val() === true) {
+                    if (isAdmin) {
                         console.log('Acesso admin confirmado');
                         finalizeAccess(true);
                     } else {
@@ -224,15 +220,14 @@
                         const errorEl = document.getElementById('loadingError');
                         errorEl.textContent = 'Acesso negado. Você não é administrador.';
                         errorEl.style.display = 'block';
-                        setTimeout(() => window.location.replace('login.html'), 2000);
+                        setTimeout(() => window.location.replace('home.html'), 2000);
                     }
                 } catch (err) {
                     console.error('Erro na verificação de admin:', err);
                     const errorEl = document.getElementById('loadingError');
                     errorEl.textContent = 'Erro ao verificar permissões.';
                     errorEl.style.display = 'block';
-                    // Libera o layout mesmo com erro para não travar
-                    setTimeout(() => finalizeAccess(true), 1000);
+                    setTimeout(() => window.location.replace('login.html'), 2000);
                 }
             });
         } catch (error) {
@@ -240,7 +235,7 @@
             const errorEl = document.getElementById('loadingError');
             errorEl.textContent = 'Erro ao carregar autenticação.';
             errorEl.style.display = 'block';
-            setTimeout(() => finalizeAccess(true), 1000);
+            setTimeout(() => window.location.replace('login.html'), 1000);
         }
         // --- AUTO NUMERAÇÃO AO PULAR LINHA ---
         const descInput = document.getElementById('updateDesc');
